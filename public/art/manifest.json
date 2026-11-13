@@ -1,0 +1,1475 @@
+{
+ "version": 1,
+ "note": "烬野 美术资源包：atlas 键 → 源图；spec = [h 世界高 | w 世界宽 | fit 边长]",
+ "heroPPU": 110,
+ "sprites": {
+  "pine_old": {
+   "file": "pine_old.png",
+   "w": 341,
+   "h": 562,
+   "pivot": [
+    0.5,
+    0.989
+   ]
+  },
+  "pine_dense": {
+   "file": "pine_dense.png",
+   "w": 307,
+   "h": 564,
+   "pivot": [
+    0.495,
+    0.989
+   ]
+  },
+  "pine_young": {
+   "file": "pine_young.png",
+   "w": 225,
+   "h": 468,
+   "pivot": [
+    0.5,
+    0.989
+   ]
+  },
+  "pine_windbent": {
+   "file": "pine_windbent.png",
+   "w": 327,
+   "h": 529,
+   "pivot": [
+    0.5,
+    0.989
+   ]
+  },
+  "birch_a": {
+   "file": "birch_a.png",
+   "w": 299,
+   "h": 522,
+   "pivot": [
+    0.406,
+    0.989
+   ]
+  },
+  "birch_fork": {
+   "file": "birch_fork.png",
+   "w": 289,
+   "h": 536,
+   "pivot": [
+    0.478,
+    0.989
+   ]
+  },
+  "tree_dead": {
+   "file": "tree_dead.png",
+   "w": 297,
+   "h": 520,
+   "pivot": [
+    0.476,
+    0.99
+   ]
+  },
+  "tree_swamp": {
+   "file": "tree_swamp.png",
+   "w": 391,
+   "h": 572,
+   "pivot": [
+    0.459,
+    0.991
+   ]
+  },
+  "stump_pine": {
+   "file": "stump_pine.png",
+   "w": 151,
+   "h": 100,
+   "pivot": [
+    0.479,
+    0.971
+   ]
+  },
+  "stump_birch": {
+   "file": "stump_birch.png",
+   "w": 143,
+   "h": 110,
+   "pivot": [
+    0.533,
+    0.972
+   ]
+  },
+  "boulder_a": {
+   "file": "boulder_a.png",
+   "w": 210,
+   "h": 178,
+   "pivot": [
+    0.528,
+    0.978
+   ]
+  },
+  "boulder_b": {
+   "file": "boulder_b.png",
+   "w": 202,
+   "h": 196,
+   "pivot": [
+    0.525,
+    0.98
+   ]
+  },
+  "berrybush": {
+   "file": "berrybush.png",
+   "w": 165,
+   "h": 165,
+   "pivot": [
+    0.48,
+    0.978
+   ]
+  },
+  "berrybush_picked": {
+   "file": "berrybush_picked.png",
+   "w": 110,
+   "h": 165,
+   "pivot": [
+    0.513,
+    0.982
+   ]
+  },
+  "grass_tuft": {
+   "file": "grass_tuft.png",
+   "w": 85,
+   "h": 139,
+   "pivot": [
+    0.477,
+    0.983
+   ]
+  },
+  "grass_cut": {
+   "file": "grass_cut.png",
+   "w": 51,
+   "h": 74,
+   "pivot": [
+    0.472,
+    0.974
+   ]
+  },
+  "twig_bush": {
+   "file": "twig_bush.png",
+   "w": 96,
+   "h": 165,
+   "pivot": [
+    0.522,
+    0.983
+   ]
+  },
+  "twig_cut": {
+   "file": "twig_cut.png",
+   "w": 63,
+   "h": 69,
+   "pivot": [
+    0.465,
+    0.975
+   ]
+  },
+  "flower_red": {
+   "file": "flower_red.png",
+   "w": 94,
+   "h": 117,
+   "pivot": [
+    0.542,
+    0.98
+   ]
+  },
+  "flower_yellow": {
+   "file": "flower_yellow.png",
+   "w": 78,
+   "h": 113,
+   "pivot": [
+    0.439,
+    0.981
+   ]
+  },
+  "flower_blue": {
+   "file": "flower_blue.png",
+   "w": 78,
+   "h": 113,
+   "pivot": [
+    0.45,
+    0.98
+   ]
+  },
+  "carrot_plant": {
+   "file": "carrot_plant.png",
+   "w": 75,
+   "h": 104,
+   "pivot": [
+    0.498,
+    0.981
+   ]
+  },
+  "reeds": {
+   "file": "reeds.png",
+   "w": 131,
+   "h": 173,
+   "pivot": [
+    0.473,
+    0.981
+   ]
+  },
+  "reeds_cut": {
+   "file": "reeds_cut.png",
+   "w": 80,
+   "h": 104,
+   "pivot": [
+    0.505,
+    0.977
+   ]
+  },
+  "fern": {
+   "file": "fern.png",
+   "w": 118,
+   "h": 113,
+   "pivot": [
+    0.472,
+    0.978
+   ]
+  },
+  "mushrooms": {
+   "file": "mushrooms.png",
+   "w": 63,
+   "h": 74,
+   "pivot": [
+    0.48,
+    0.978
+   ]
+  },
+  "pebbles": {
+   "file": "pebbles.png",
+   "w": 92,
+   "h": 57,
+   "pivot": [
+    0.498,
+    0.965
+   ]
+  },
+  "stones_moss": {
+   "file": "stones_moss.png",
+   "w": 92,
+   "h": 57,
+   "pivot": [
+    0.527,
+    0.965
+   ]
+  },
+  "bones": {
+   "file": "bones.png",
+   "w": 160,
+   "h": 126,
+   "pivot": [
+    0.634,
+    0.979
+   ]
+  },
+  "tuft_a": {
+   "file": "tuft_a.png",
+   "w": 80,
+   "h": 73,
+   "pivot": [
+    0.508,
+    0.973
+   ]
+  },
+  "tuft_b": {
+   "file": "tuft_b.png",
+   "w": 76,
+   "h": 84,
+   "pivot": [
+    0.534,
+    0.978
+   ]
+  },
+  "tuft_swamp": {
+   "file": "tuft_swamp.png",
+   "w": 80,
+   "h": 80,
+   "pivot": [
+    0.518,
+    0.978
+   ]
+  },
+  "flint_ground": {
+   "file": "flint_ground.png",
+   "w": 67,
+   "h": 57,
+   "pivot": [
+    0.49,
+    0.972
+   ]
+  },
+  "campfire_base": {
+   "file": "campfire_base.png",
+   "w": 176,
+   "h": 143,
+   "pivot": [
+    0.527,
+    0.966
+   ]
+  },
+  "campfire_burnt": {
+   "file": "campfire_burnt.png",
+   "w": 176,
+   "h": 140,
+   "pivot": [
+    0.483,
+    0.967
+   ]
+  },
+  "firepit_base": {
+   "file": "firepit_base.png",
+   "w": 210,
+   "h": 154,
+   "pivot": [
+    0.511,
+    0.963
+   ]
+  },
+  "firepit_burnt": {
+   "file": "firepit_burnt.png",
+   "w": 210,
+   "h": 153,
+   "pivot": [
+    0.514,
+    0.962
+   ]
+  },
+  "bench": {
+   "file": "bench.png",
+   "w": 207,
+   "h": 216,
+   "pivot": [
+    0.302,
+    0.982
+   ]
+  },
+  "spider_den": {
+   "file": "spider_den.png",
+   "w": 269,
+   "h": 308,
+   "pivot": [
+    0.505,
+    0.984
+   ]
+  },
+  "spider": {
+   "file": "spider.png",
+   "w": 185,
+   "h": 203,
+   "pivot": [
+    0.494,
+    0.984
+   ]
+  },
+  "spider_walk": {
+   "file": "spider_walk.png",
+   "w": 185,
+   "h": 171,
+   "pivot": [
+    0.313,
+    0.981
+   ]
+  },
+  "spider_rear": {
+   "file": "spider_rear.png",
+   "w": 185,
+   "h": 223,
+   "pivot": [
+    0.141,
+    0.985
+   ]
+  },
+  "spider_lunge": {
+   "file": "spider_lunge.png",
+   "w": 185,
+   "h": 151,
+   "pivot": [
+    0.368,
+    0.978
+   ]
+  },
+  "spider_dead": {
+   "file": "spider_dead.png",
+   "w": 185,
+   "h": 142,
+   "pivot": [
+    0.545,
+    0.974
+   ]
+  },
+  "crow_stand": {
+   "file": "crow_stand.png",
+   "w": 97,
+   "h": 84,
+   "pivot": [
+    0.403,
+    0.975
+   ]
+  },
+  "crow_peck": {
+   "file": "crow_peck.png",
+   "w": 97,
+   "h": 58,
+   "pivot": [
+    0.273,
+    0.966
+   ]
+  },
+  "crow_fly0": {
+   "file": "crow_fly0.png",
+   "w": 97,
+   "h": 104,
+   "pivot": [
+    0.44,
+    0.98
+   ]
+  },
+  "crow_fly1": {
+   "file": "crow_fly1.png",
+   "w": 97,
+   "h": 81,
+   "pivot": [
+    0.609,
+    0.974
+   ]
+  },
+  "shade": {
+   "file": "shade.png",
+   "w": 171,
+   "h": 268,
+   "pivot": [
+    0.514,
+    0.99
+   ]
+  },
+  "icon_grass": {
+   "file": "icon_grass.png",
+   "w": 86,
+   "h": 128,
+   "pivot": [
+    0.302,
+    0.978
+   ]
+  },
+  "icon_twigs": {
+   "file": "icon_twigs.png",
+   "w": 93,
+   "h": 128,
+   "pivot": [
+    0.253,
+    0.974
+   ]
+  },
+  "icon_flint": {
+   "file": "icon_flint.png",
+   "w": 72,
+   "h": 128,
+   "pivot": [
+    0.377,
+    0.974
+   ]
+  },
+  "icon_stone": {
+   "file": "icon_stone.png",
+   "w": 95,
+   "h": 128,
+   "pivot": [
+    0.413,
+    0.973
+   ]
+  },
+  "icon_log": {
+   "file": "icon_log.png",
+   "w": 99,
+   "h": 128,
+   "pivot": [
+    0.305,
+    0.973
+   ]
+  },
+  "icon_rope": {
+   "file": "icon_rope.png",
+   "w": 124,
+   "h": 128,
+   "pivot": [
+    0.62,
+    0.971
+   ]
+  },
+  "icon_berries": {
+   "file": "icon_berries.png",
+   "w": 85,
+   "h": 128,
+   "pivot": [
+    0.387,
+    0.978
+   ]
+  },
+  "icon_berry_cooked": {
+   "file": "icon_berry_cooked.png",
+   "w": 101,
+   "h": 128,
+   "pivot": [
+    0.296,
+    0.974
+   ]
+  },
+  "icon_carrot": {
+   "file": "icon_carrot.png",
+   "w": 73,
+   "h": 128,
+   "pivot": [
+    0.096,
+    0.98
+   ]
+  },
+  "icon_carrot_cooked": {
+   "file": "icon_carrot_cooked.png",
+   "w": 69,
+   "h": 128,
+   "pivot": [
+    0.106,
+    0.98
+   ]
+  },
+  "icon_petals": {
+   "file": "icon_petals.png",
+   "w": 110,
+   "h": 128,
+   "pivot": [
+    0.551,
+    0.971
+   ]
+  },
+  "icon_silk": {
+   "file": "icon_silk.png",
+   "w": 117,
+   "h": 128,
+   "pivot": [
+    0.381,
+    0.974
+   ]
+  },
+  "icon_gland": {
+   "file": "icon_gland.png",
+   "w": 86,
+   "h": 128,
+   "pivot": [
+    0.462,
+    0.976
+   ]
+  },
+  "icon_meat": {
+   "file": "icon_meat.png",
+   "w": 105,
+   "h": 128,
+   "pivot": [
+    0.437,
+    0.972
+   ]
+  },
+  "icon_meat_cooked": {
+   "file": "icon_meat_cooked.png",
+   "w": 105,
+   "h": 128,
+   "pivot": [
+    0.438,
+    0.972
+   ]
+  },
+  "icon_reed": {
+   "file": "icon_reed.png",
+   "w": 85,
+   "h": 128,
+   "pivot": [
+    0.299,
+    0.977
+   ]
+  },
+  "icon_mushroom": {
+   "file": "icon_mushroom.png",
+   "w": 110,
+   "h": 128,
+   "pivot": [
+    0.359,
+    0.97
+   ]
+  },
+  "icon_mushroom_cooked": {
+   "file": "icon_mushroom_cooked.png",
+   "w": 73,
+   "h": 128,
+   "pivot": [
+    0.1,
+    0.979
+   ]
+  },
+  "icon_axe": {
+   "file": "icon_axe.png",
+   "w": 61,
+   "h": 128,
+   "pivot": [
+    0.131,
+    0.992
+   ]
+  },
+  "icon_pickaxe": {
+   "file": "icon_pickaxe.png",
+   "w": 100,
+   "h": 128,
+   "pivot": [
+    0.14,
+    0.976
+   ]
+  },
+  "icon_torch": {
+   "file": "icon_torch.png",
+   "w": 58,
+   "h": 128,
+   "pivot": [
+    0.129,
+    0.981
+   ]
+  },
+  "icon_spear": {
+   "file": "icon_spear.png",
+   "w": 59,
+   "h": 128,
+   "pivot": [
+    0.132,
+    0.98
+   ]
+  },
+  "icon_spear2": {
+   "file": "icon_spear2.png",
+   "w": 49,
+   "h": 128,
+   "pivot": [
+    0.114,
+    0.992
+   ]
+  },
+  "icon_lantern": {
+   "file": "icon_lantern.png",
+   "w": 61,
+   "h": 128,
+   "pivot": [
+    0.515,
+    0.978
+   ]
+  },
+  "icon_backpack": {
+   "file": "icon_backpack.png",
+   "w": 115,
+   "h": 128,
+   "pivot": [
+    0.469,
+    0.98
+   ]
+  },
+  "icon_armor_grass": {
+   "file": "icon_armor_grass.png",
+   "w": 109,
+   "h": 128,
+   "pivot": [
+    0.511,
+    0.981
+   ]
+  },
+  "icon_armor_wood": {
+   "file": "icon_armor_wood.png",
+   "w": 107,
+   "h": 128,
+   "pivot": [
+    0.506,
+    0.979
+   ]
+  },
+  "icon_garland": {
+   "file": "icon_garland.png",
+   "w": 128,
+   "h": 122,
+   "pivot": [
+    0.487,
+    0.979
+   ]
+  },
+  "icon_salve": {
+   "file": "icon_salve.png",
+   "w": 119,
+   "h": 128,
+   "pivot": [
+    0.498,
+    0.977
+   ]
+  },
+  "hero_idle": {
+   "file": "hero_idle.png",
+   "w": 139,
+   "h": 298,
+   "pivot": [
+    0.364,
+    0.988
+   ]
+  },
+  "hero_walk": {
+   "file": "hero_walk.png",
+   "w": 167,
+   "h": 286,
+   "pivot": [
+    0.387,
+    0.988
+   ]
+  },
+  "hero_chop": {
+   "file": "hero_chop.png",
+   "w": 171,
+   "h": 317,
+   "pivot": [
+    0.443,
+    0.989
+   ]
+  },
+  "hero_attack": {
+   "file": "hero_attack.png",
+   "w": 191,
+   "h": 283,
+   "pivot": [
+    0.5,
+    0.988
+   ]
+  },
+  "hero_torch": {
+   "file": "hero_torch.png",
+   "w": 153,
+   "h": 316,
+   "pivot": [
+    0.49,
+    0.989
+   ]
+  }
+ },
+ "keys": {
+  "pine0": {
+   "src": "pine_old",
+   "spec": [
+    "h",
+    7.6
+   ],
+   "mirror": false
+  },
+  "pine1": {
+   "src": "pine_dense",
+   "spec": [
+    "h",
+    7.0
+   ],
+   "mirror": false
+  },
+  "pine2": {
+   "src": "pine_young",
+   "spec": [
+    "h",
+    5.4
+   ],
+   "mirror": false
+  },
+  "pine3": {
+   "src": "pine_windbent",
+   "spec": [
+    "h",
+    6.8
+   ],
+   "mirror": false
+  },
+  "birch0": {
+   "src": "birch_a",
+   "spec": [
+    "h",
+    6.6
+   ],
+   "mirror": false
+  },
+  "birch1": {
+   "src": "birch_fork",
+   "spec": [
+    "h",
+    6.8
+   ],
+   "mirror": false
+  },
+  "birch2": {
+   "src": "birch_a",
+   "spec": [
+    "h",
+    5.9
+   ],
+   "mirror": true
+  },
+  "dead0": {
+   "src": "tree_dead",
+   "spec": [
+    "h",
+    6.0
+   ],
+   "mirror": false
+  },
+  "dead1": {
+   "src": "tree_swamp",
+   "spec": [
+    "h",
+    6.6
+   ],
+   "mirror": false
+  },
+  "stump_pine": {
+   "src": "stump_pine",
+   "spec": [
+    "w",
+    1.8
+   ],
+   "mirror": false
+  },
+  "stump_birch": {
+   "src": "stump_birch",
+   "spec": [
+    "w",
+    1.7
+   ],
+   "mirror": false
+  },
+  "stump_dead": {
+   "src": "stump_pine",
+   "spec": [
+    "w",
+    1.6
+   ],
+   "mirror": true
+  },
+  "boulder0": {
+   "src": "boulder_a",
+   "spec": [
+    "w",
+    2.5
+   ],
+   "mirror": false
+  },
+  "boulder1": {
+   "src": "boulder_b",
+   "spec": [
+    "w",
+    2.4
+   ],
+   "mirror": false
+  },
+  "bush": {
+   "src": "berrybush",
+   "spec": [
+    "h",
+    1.9
+   ],
+   "mirror": false
+  },
+  "bush_empty": {
+   "src": "berrybush_picked",
+   "spec": [
+    "h",
+    1.9
+   ],
+   "mirror": false
+  },
+  "grass": {
+   "src": "grass_tuft",
+   "spec": [
+    "h",
+    1.6
+   ],
+   "mirror": false
+  },
+  "grass_picked": {
+   "src": "grass_cut",
+   "spec": [
+    "h",
+    0.85
+   ],
+   "mirror": false
+  },
+  "sapling": {
+   "src": "twig_bush",
+   "spec": [
+    "h",
+    1.9
+   ],
+   "mirror": false
+  },
+  "sapling_picked": {
+   "src": "twig_cut",
+   "spec": [
+    "h",
+    0.8
+   ],
+   "mirror": false
+  },
+  "flower0": {
+   "src": "flower_red",
+   "spec": [
+    "h",
+    1.35
+   ],
+   "mirror": false
+  },
+  "flower1": {
+   "src": "flower_yellow",
+   "spec": [
+    "h",
+    1.3
+   ],
+   "mirror": false
+  },
+  "flower2": {
+   "src": "flower_blue",
+   "spec": [
+    "h",
+    1.3
+   ],
+   "mirror": false
+  },
+  "carrot": {
+   "src": "carrot_plant",
+   "spec": [
+    "h",
+    1.2
+   ],
+   "mirror": false
+  },
+  "reeds": {
+   "src": "reeds",
+   "spec": [
+    "h",
+    2.0
+   ],
+   "mirror": false
+  },
+  "reeds_picked": {
+   "src": "reeds_cut",
+   "spec": [
+    "h",
+    1.2
+   ],
+   "mirror": false
+  },
+  "fern0": {
+   "src": "fern",
+   "spec": [
+    "h",
+    1.3
+   ],
+   "mirror": false
+  },
+  "fern1": {
+   "src": "fern",
+   "spec": [
+    "h",
+    1.1
+   ],
+   "mirror": true
+  },
+  "mushroom": {
+   "src": "mushrooms",
+   "spec": [
+    "h",
+    0.85
+   ],
+   "mirror": false
+  },
+  "pebbles0": {
+   "src": "pebbles",
+   "spec": [
+    "w",
+    1.1
+   ],
+   "mirror": false
+  },
+  "pebbles1": {
+   "src": "stones_moss",
+   "spec": [
+    "w",
+    1.1
+   ],
+   "mirror": false
+  },
+  "bones": {
+   "src": "bones",
+   "spec": [
+    "w",
+    1.9
+   ],
+   "mirror": false
+  },
+  "tuft0": {
+   "src": "tuft_a",
+   "spec": [
+    "w",
+    0.95
+   ],
+   "mirror": false
+  },
+  "tuft1": {
+   "src": "tuft_b",
+   "spec": [
+    "w",
+    0.9
+   ],
+   "mirror": false
+  },
+  "tuft_swamp": {
+   "src": "tuft_swamp",
+   "spec": [
+    "w",
+    0.95
+   ],
+   "mirror": false
+  },
+  "flint_ground": {
+   "src": "flint_ground",
+   "spec": [
+    "w",
+    0.8
+   ],
+   "mirror": false
+  },
+  "campfire": {
+   "src": "campfire_base",
+   "spec": [
+    "w",
+    2.1
+   ],
+   "mirror": false
+  },
+  "campfire_burnt": {
+   "src": "campfire_burnt",
+   "spec": [
+    "w",
+    2.1
+   ],
+   "mirror": false
+  },
+  "firepit": {
+   "src": "firepit_base",
+   "spec": [
+    "w",
+    2.5
+   ],
+   "mirror": false
+  },
+  "firepit_burnt": {
+   "src": "firepit_burnt",
+   "spec": [
+    "w",
+    2.5
+   ],
+   "mirror": false
+  },
+  "bench": {
+   "src": "bench",
+   "spec": [
+    "h",
+    2.5
+   ],
+   "mirror": false
+  },
+  "den0": {
+   "src": "spider_den",
+   "spec": [
+    "w",
+    2.6
+   ],
+   "mirror": false
+  },
+  "den1": {
+   "src": "spider_den",
+   "spec": [
+    "w",
+    3.2
+   ],
+   "mirror": true
+  },
+  "spider_walk0": {
+   "src": "spider",
+   "spec": [
+    "w",
+    2.2
+   ],
+   "mirror": false
+  },
+  "spider_walk1": {
+   "src": "spider_walk",
+   "spec": [
+    "w",
+    2.2
+   ],
+   "mirror": false
+  },
+  "spider_walk2": {
+   "src": "spider",
+   "spec": [
+    "w",
+    2.2
+   ],
+   "mirror": false
+  },
+  "spider_walk3": {
+   "src": "spider_walk",
+   "spec": [
+    "w",
+    2.2
+   ],
+   "mirror": false
+  },
+  "spider_windup": {
+   "src": "spider_rear",
+   "spec": [
+    "w",
+    2.2
+   ],
+   "mirror": false
+  },
+  "spider_bite": {
+   "src": "spider_lunge",
+   "spec": [
+    "w",
+    2.2
+   ],
+   "mirror": false
+  },
+  "spider_hurt": {
+   "src": "spider",
+   "spec": [
+    "w",
+    2.2
+   ],
+   "mirror": false
+  },
+  "spider_dead": {
+   "src": "spider_dead",
+   "spec": [
+    "w",
+    2.2
+   ],
+   "mirror": false
+  },
+  "spider_sleep": {
+   "src": "spider",
+   "spec": [
+    "w",
+    2.2
+   ],
+   "mirror": false
+  },
+  "crow_stand": {
+   "src": "crow_stand",
+   "spec": [
+    "w",
+    1.15
+   ],
+   "mirror": true
+  },
+  "crow_peck": {
+   "src": "crow_peck",
+   "spec": [
+    "w",
+    1.15
+   ],
+   "mirror": true
+  },
+  "crow_fly0": {
+   "src": "crow_fly0",
+   "spec": [
+    "w",
+    1.15
+   ],
+   "mirror": true
+  },
+  "crow_fly1": {
+   "src": "crow_fly1",
+   "spec": [
+    "w",
+    1.15
+   ],
+   "mirror": true
+  },
+  "shade": {
+   "src": "shade",
+   "spec": [
+    "h",
+    3.1
+   ],
+   "mirror": false
+  },
+  "item_grass": {
+   "src": "icon_grass",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_twig": {
+   "src": "icon_twigs",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_flint": {
+   "src": "icon_flint",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_stone": {
+   "src": "icon_stone",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_log": {
+   "src": "icon_log",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_rope": {
+   "src": "icon_rope",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_berry": {
+   "src": "icon_berries",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_berry_cooked": {
+   "src": "icon_berry_cooked",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_carrot": {
+   "src": "icon_carrot",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_carrot_cooked": {
+   "src": "icon_carrot_cooked",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_petals": {
+   "src": "icon_petals",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_silk": {
+   "src": "icon_silk",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_gland": {
+   "src": "icon_gland",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_meat": {
+   "src": "icon_meat",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_meat_cooked": {
+   "src": "icon_meat_cooked",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_reed": {
+   "src": "icon_reed",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_mushroom": {
+   "src": "icon_mushroom",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_mushroom_cooked": {
+   "src": "icon_mushroom_cooked",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_axe": {
+   "src": "icon_axe",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_pickaxe": {
+   "src": "icon_pickaxe",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_torch": {
+   "src": "icon_torch",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_spear": {
+   "src": "icon_spear",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_spear2": {
+   "src": "icon_spear2",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_lantern": {
+   "src": "icon_lantern",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_backpack": {
+   "src": "icon_backpack",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_armor_grass": {
+   "src": "icon_armor_grass",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_armor_wood": {
+   "src": "icon_armor_wood",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_garland": {
+   "src": "icon_garland",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_salve": {
+   "src": "icon_salve",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_campfire": {
+   "src": "campfire_base",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_firepit": {
+   "src": "firepit_base",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  },
+  "item_bench": {
+   "src": "bench",
+   "spec": [
+    "fit",
+    1.0
+   ],
+   "mirror": false
+  }
+ },
+ "hero": {
+  "idle": "hero_idle",
+  "walk": "hero_walk",
+  "chop": "hero_chop",
+  "attack": "hero_attack",
+  "torch": "hero_torch"
+ }
+}
