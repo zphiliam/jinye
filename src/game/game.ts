@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { Atlas, Frame } from '../art/atlas';
 import { PlayerArt, PLAYER_PPU, Action, Facing } from '../art/player';
 import { HeroArt } from '../art/hero';
+import { HeroRig } from '../art/rig';
 import { World, Biome, HALF } from '../world/worldgen';
 import { Terrain } from '../world/terrain';
 import { U, MAX_LIGHTS } from '../render/shared';
@@ -51,7 +52,7 @@ export class Game implements HudHost {
   spriteMat: THREE.ShaderMaterial;
   playerMat!: THREE.ShaderMaterial;
   playerTex!: THREE.CanvasTexture;
-  playerArt: PlayerArt | HeroArt;
+  playerArt: PlayerArt | HeroArt | HeroRig;
   day: DayCycle;
   audio = new Audio();
   input: Input;
@@ -94,7 +95,7 @@ export class Game implements HudHost {
   placing: { recipe: Recipe; ok: boolean; x: number; z: number } | null = null;
   hitStop = 0;
   // 摄像机
-  camYaw = 0; camYawT = 0; camDist = 21; camDistT = 21;
+  camYaw = 0; camYawT = 0; camDist = 21; camDistT = 21; camPitch = 1.0;
   camX = 0; camZ = 0; camShake = 0;
   camOff = new THREE.Vector3();
   // 其他
@@ -118,7 +119,8 @@ export class Game implements HudHost {
 
   constructor(canvas: HTMLCanvasElement, atlas: Atlas, opts: { seed: number; easy: boolean }) {
     this.atlas = atlas;
-    this.playerArt = HeroArt.usable(atlas.pack) ? new HeroArt(atlas.pack) : new PlayerArt();
+    // 主角：分层骨骼动画 > 整身姿势立绘 > 程序化绘制（?art=proc）
+    this.playerArt = HeroRig.usable(atlas.pack) ? new HeroRig(atlas.pack!) : HeroArt.usable(atlas.pack) ? new HeroArt(atlas.pack) : new PlayerArt();
     this.easy = opts.easy;
     this.seed = opts.seed;
     this.rng = mulberry32(opts.seed ^ 0x5bd1e995);
@@ -311,6 +313,23 @@ export class Game implements HudHost {
     }
     return best;
   }
+  /** 画中石环中心（火焰根部）离落脚点的高度（沿广告牌“上”方向，世界单位） */
+  fireCenter(o: WObj): number {
+    const d = (this.atlas.pack as unknown as { fire?: Record<string, { center: number }> } | null)?.fire;
+    return this.atlas.fromPack.has(o.kind) && d?.[o.kind] ? d[o.kind].center : 0.12;
+  }
+  /**
+   * 火堆上的点：先沿广告牌的“上”方向抬到画中石环中心 + up，再朝镜头挪 toward（同时抬高 toward·tanθ，
+   * 画面位置不变、只让它在深度上排到底座前面）。火焰、前排石头、光源、火星烟雾都从这里取位置。
+   */
+  firePoint(o: WObj, up: number, toward: number) {
+    const cu = U.uCamUp.value as THREE.Vector3;
+    let ux = cu.x * 0.55, uy = 0.45 + cu.y * 0.55, uz = cu.z * 0.55;
+    const ul = Math.hypot(ux, uy, uz) || 1; ux /= ul; uy /= ul; uz /= ul;
+    const h = this.fireCenter(o) + up;
+    const tx = Math.sin(this.camYaw), tz = Math.cos(this.camYaw);
+    return { x: o.x + ux * h + tx * toward, y: o.y + uy * h + toward * Math.tan(this.camPitch), z: o.z + uz * h + tz * toward };
+  }
   nearFirePit(): WObj | null {
     let best: WObj | null = null, bd = 1e9;
     for (const o of this.grid.query(this.px, this.pz, 4, [])) {
@@ -371,7 +390,8 @@ export class Game implements HudHost {
       const cooked = d.food.cook;
       this.startAnim('craft', 0.5);
       this.audio.ignite();
-      for (let k = 0; k < 10; k++) this.fxAdd.emit({ x: fire.x + (Math.random() - 0.5) * 0.5, y: fire.y + 0.6, z: fire.z + (Math.random() - 0.5) * 0.5, vx: (Math.random() - 0.5) * 2, vy: 2 + Math.random() * 2, vz: (Math.random() - 0.5) * 2, life: 0.8, size: 0.25, color: [1, 0.6, 0.2], type: PT_SPARK, grav: 2 });
+      const fp = this.firePoint(fire, 0.3, 0.2);
+      for (let k = 0; k < 10; k++) this.fxAdd.emit({ x: fp.x + (Math.random() - 0.5) * 0.5, y: fp.y, z: fp.z + (Math.random() - 0.5) * 0.5, vx: (Math.random() - 0.5) * 2, vy: 2 + Math.random() * 2, vz: (Math.random() - 0.5) * 2, life: 0.8, size: 0.25, color: [1, 0.6, 0.2], type: PT_SPARK, grav: 2 });
       setTimeout(() => { this.give(cooked, 1); this.hud.toast(cooked, `烤好了：${ITEMS[cooked].name}`); this.audio.pop(); }, 450);
       this.hintOnce('cooked', '熟食回复更多，有的还能<b>安神</b>。', 6);
       return;
@@ -821,7 +841,8 @@ export class Game implements HudHost {
     o.fuel = Math.min(o.maxFuel, o.fuel + secs);
     if (was <= 0) { this.setObjFrame(o, o.kind === 'firepit' ? 'firepit' : 'campfire'); this.statics.commit(); }
     this.audio.ignite();
-    for (let k = 0; k < 24; k++) this.fxAdd.emit({ x: o.x + (Math.random() - 0.5) * 0.6, y: o.y + 0.4, z: o.z + (Math.random() - 0.5) * 0.6, vx: (Math.random() - 0.5) * 3, vy: 3 + Math.random() * 4, vz: (Math.random() - 0.5) * 3, life: 1.0 + Math.random(), size: 0.18, color: [1, 0.6, 0.2], type: PT_SPARK, grav: 1.5, drag: 1 });
+    const sp = this.firePoint(o, 0, 0.2);
+    for (let k = 0; k < 24; k++) this.fxAdd.emit({ x: sp.x + (Math.random() - 0.5) * 0.6, y: sp.y + 0.1, z: sp.z + (Math.random() - 0.5) * 0.6, vx: (Math.random() - 0.5) * 3, vy: 3 + Math.random() * 4, vz: (Math.random() - 0.5) * 3, life: 1.0 + Math.random(), size: 0.18, color: [1, 0.6, 0.2], type: PT_SPARK, grav: 1.5, drag: 1 });
     o.flash = 0.6;
     this.hud.toast(null, `火焰旺了起来（可烧 ${Math.ceil(o.fuel)} 秒）`);
   }
@@ -1286,7 +1307,8 @@ export class Game implements HudHost {
           o.fuel = 0;
           this.setObjFrame(o, o.kind === 'firepit' ? 'firepit_burnt' : 'campfire_burnt');
           this.statics.commit();
-          for (let k = 0; k < 12; k++) this.fxNorm.emit({ x: o.x, y: o.y + 0.3, z: o.z, vx: (Math.random() - 0.5), vy: 1 + Math.random(), vz: (Math.random() - 0.5), life: 3, size: 0.6, grow: 0.8, color: [0.3, 0.28, 0.27], a: 0.5, type: PT_SMOKE, drag: 1 });
+          const sp = this.firePoint(o, 0, 0.2);
+          for (let k = 0; k < 12; k++) this.fxNorm.emit({ x: sp.x, y: sp.y + 0.1, z: sp.z, vx: (Math.random() - 0.5), vy: 1 + Math.random(), vz: (Math.random() - 0.5), life: 3, size: 0.6, grow: 0.8, color: [0.3, 0.28, 0.27], a: 0.5, type: PT_SMOKE, drag: 1 });
         } else if (o.fuel < 20 && Math.hypot(o.x - this.px, o.z - this.pz) < 8) this.hintOnce('lowfire', '火快灭了！点击火堆或在物品栏<b>右键</b>木头/干草来<b>添柴</b>。', 7);
       }
       if (o.flash > 0 || o.shake > 0) this.fxObjs.add(o);
@@ -1461,6 +1483,7 @@ export class Game implements HudHost {
       this.camX += (lx - this.camX) * kk; this.camZ += (lz - this.camZ) * kk;
     }
     const pitch = 0.86 + clamp((this.camDist - 11) / 23) * 0.18;
+    this.camPitch = pitch;
     const ty = this.world.height(this.camX, this.camZ) + 1.1;
     const cp = Math.cos(pitch), sp = Math.sin(pitch);
     this.camShake = Math.max(0, this.camShake - dt * 1.8);
@@ -1487,7 +1510,8 @@ export class Game implements HudHost {
       if ((o.kind !== 'campfire' && o.kind !== 'firepit') || o.fuel <= 0) continue;
       const f = Math.min(1, o.fuel / 60);
       const fl = 1 + Math.sin(t * 13 + o.id) * 0.06 + Math.sin(t * 23.7 + o.id * 3) * 0.05 + (Math.random() - 0.5) * 0.06;
-      L.push({ x: o.x, y: o.y + 1.1, z: o.z, r: (4.5 + 8 * f + (o.kind === 'firepit' ? 1.5 : 0)) * fl, c: [1.0, 0.52, 0.2], i: (1.5 + 0.5 * f) * fl, fire: true });
+      const lp = this.atlas.fromPack.has(o.kind) ? this.firePoint(o, 0.55, 0.2) : { x: o.x, y: o.y + 1.1, z: o.z };
+      L.push({ x: lp.x, y: lp.y, z: lp.z, r: (4.5 + 8 * f + (o.kind === 'firepit' ? 1.5 : 0)) * fl, c: [1.0, 0.52, 0.2], i: (1.5 + 0.5 * f) * fl, fire: true });
     }
     const h = this.inv.equip.hand;
     if (h && ITEMS[h.id].light && this.mode !== 'menu') {
@@ -1577,8 +1601,18 @@ export class Game implements HudHost {
       if ((o.kind === 'campfire' || o.kind === 'firepit') && o.fuel > 0) {
         const f = Math.min(1, o.fuel / 70);
         const fr = Math.floor(t * 12 + o.id * 1.7) % 6;
-        const sc = (0.55 + 0.6 * f) * (o.kind === 'firepit' ? 1.1 : 1) * (1 + Math.sin(t * 9 + o.id) * 0.04);
-        D.push({ x: o.x, y: o.y + 0.12, z: o.z + 0.05, frame: this.atlas.get(`flame${fr}`), flags: FLAG_EMISSIVE | ((fr & 1) ? FLAG_FLIP : 0), scale: sc, sway: 0.04, phase: o.id });
+        const painted = this.atlas.fromPack.has(o.kind);
+        // 手绘石环内径约 1.05 单位：火焰尺寸收在环内，随燃料增减
+        const sc = (painted ? (o.kind === 'firepit' ? 0.5 + 0.55 * f : 0.44 + 0.5 * f) : (0.55 + 0.6 * f) * (o.kind === 'firepit' ? 1.1 : 1)) * (1 + Math.sin(t * 9 + o.id) * 0.04);
+        // 火焰根部略低于石环中心，让前排石头和柴头压住火焰底部
+        const fp = painted ? this.firePoint(o, -0.1, 0.2) : { x: o.x, y: o.y + 0.12, z: o.z + 0.05 };
+        D.push({ x: fp.x, y: fp.y, z: fp.z, frame: this.atlas.get(`flame${fr}`), flags: FLAG_EMISSIVE | ((fr & 1) ? FLAG_FLIP : 0), scale: sc, sway: 0.04, phase: o.id });
+        // 前排石头层：与底座同一画面位置，但深度在火焰之前
+        const front = this.atlas.frames.get(o.kind + '_front');
+        if (painted && front) {
+          const tx = Math.sin(this.camYaw), tz = Math.cos(this.camYaw), dd = 0.42;
+          D.push({ x: o.x + tx * dd, y: o.y + dd * Math.tan(this.camPitch), z: o.z + tz * dd, frame: front, flags: this.objFlip(o) ? FLAG_FLIP : 0 });
+        }
       }
     }
     // 墨蛛
@@ -1644,6 +1678,11 @@ export class Game implements HudHost {
     if (A) { action = A.a; actionT = clamp(A.t / A.dur); }
     else if (this.eatAnim > 0) { action = 'eat'; actionT = 1 - this.eatAnim / 0.7; }
     const e = this.inv.equip;
+    if (this.playerArt instanceof HeroRig) {
+      // 地面速度在画面中的方向：镜头右方为 +x，朝向镜头为 +y
+      const rx = Math.cos(this.camYaw), rz = -Math.sin(this.camYaw), fx = -Math.sin(this.camYaw), fz = -Math.cos(this.camYaw);
+      this.playerArt.setVelocity(this.pvx * rx + this.pvz * rz, -(this.pvx * fx + this.pvz * fz), Math.hypot(this.pvx, this.pvz));
+    }
     this.playerArt.draw({
       t: this.playerDrawT, facing: this.facing, flip: this.flip, walk: this.walkPhase, moving: this.moving,
       action, actionT, held: e.hand?.id ?? null, armor: e.body?.id ?? null, head: e.head?.id ?? null, back: e.back?.id ?? null,

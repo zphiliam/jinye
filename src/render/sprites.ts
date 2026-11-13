@@ -209,7 +209,7 @@ export class SpriteBatch {
     if (this.dirtyMax >= this.dirtyMin) {
       const sizes = [3, 2, 4, 4, 4];
       this.attrs.forEach((a, k) => {
-        a.clearUpdateRanges();
+        // 不在这里清空：同一帧内多次 commit 时累积区间，three.js 上传后会自行清空
         a.addUpdateRange(this.dirtyMin * sizes[k], (this.dirtyMax - this.dirtyMin + 1) * sizes[k]);
         a.needsUpdate = true;
       });
