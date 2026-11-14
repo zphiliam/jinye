@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { Atlas, Frame } from '../art/atlas';
 import { PlayerArt, PLAYER_PPU, Action, Facing } from '../art/player';
 import { HeroArt } from '../art/hero';
+import { HeroRig } from '../art/rig';
 import { World, Biome, HALF } from '../world/worldgen';
 import { Terrain } from '../world/terrain';
 import { U, MAX_LIGHTS } from '../render/shared';
@@ -19,6 +20,7 @@ import { Grid, WObj, ObjKind, Spider, Drop, Crow } from './entities';
 import { Hud, HudHost, helpHtml } from '../ui/hud';
 import { parchment } from '../ui/svg';
 import { mulberry32, RNG, clamp } from '../util/rng';
+import { writeSave, applySave, clearSave, SaveData } from './save';
 
 export const HP_MAX = 150, HUNGER_MAX = 150, SANITY_MAX = 200;
 const SPEED = 5.2;
@@ -51,7 +53,7 @@ export class Game implements HudHost {
   spriteMat: THREE.ShaderMaterial;
   playerMat!: THREE.ShaderMaterial;
   playerTex!: THREE.CanvasTexture;
-  playerArt: PlayerArt | HeroArt;
+  playerArt: PlayerArt | HeroArt | HeroRig;
   day: DayCycle;
   audio = new Audio();
   input: Input;
@@ -94,13 +96,17 @@ export class Game implements HudHost {
   placing: { recipe: Recipe; ok: boolean; x: number; z: number } | null = null;
   hitStop = 0;
   // 摄像机
-  camYaw = 0; camYawT = 0; camDist = 21; camDistT = 21;
+  camYaw = 0; camYawT = 0; camDist = 21; camDistT = 21; camPitch = 1.0;
   camX = 0; camZ = 0; camShake = 0;
   camOff = new THREE.Vector3();
   // 其他
   time = 0;
   hover: Target | null = null;
   eyes: { x: number; z: number; t: number }[] = [];
+  /** 墨潮之夜：每第三夜，潮影聚在火光边缘 */
+  tideK = 0; tideHitT = 0;
+  tideLunge: { fx: number; fz: number; a: number; d: number; t: number } | null = null;
+  isTide() { return this.mode !== 'menu' && this.day.day % 3 === 0 && this.day.phase === 'night'; }
   lights: LightSrc[] = [];
   menuFire: WObj | null = null;
   fpsAcc = 0; fpsN = 0;
@@ -115,10 +121,16 @@ export class Game implements HudHost {
   groundPt: [number, number] = [0, 0];
   camUpBill = new THREE.Vector3(0, 1, 0);
   respawnQueue: { kind: string; x: number; z: number; t: number; frame: string }[] = [];
+  /** 存档用：初始生成的物体数量与其初始状态；生成之后新增的装饰 */
+  genCount = 0;
+  genInfo: { hp: number; frame: string; r: number }[] = [];
+  decorLog: [string, number, number][] = [];
+  genDone = false;
 
   constructor(canvas: HTMLCanvasElement, atlas: Atlas, opts: { seed: number; easy: boolean }) {
     this.atlas = atlas;
-    this.playerArt = HeroArt.usable(atlas.pack) ? new HeroArt(atlas.pack) : new PlayerArt();
+    // 主角：分层骨骼动画 > 整身姿势立绘 > 程序化绘制（?art=proc）
+    this.playerArt = HeroRig.usable(atlas.pack) ? new HeroRig(atlas.pack!) : HeroArt.usable(atlas.pack) ? new HeroArt(atlas.pack) : new PlayerArt();
     this.easy = opts.easy;
     this.seed = opts.seed;
     this.rng = mulberry32(opts.seed ^ 0x5bd1e995);
@@ -159,7 +171,11 @@ export class Game implements HudHost {
     this.fxAdd = new ParticleSystem(1800, true, false);
     this.fxNorm = new ParticleSystem(1800, false, true);
     this.scene.add(this.statics.mesh, this.dyn.mesh, this.playerBatch.mesh, this.shadowsStatic.mesh, this.shadowsDyn.mesh, this.fxAdd.points, this.fxNorm.points);
+    this.decorLog = []; this.genDone = false; this.menuFire = null;
     for (const s of this.world.spawns) this.spawnFromGen(s.kind, s.x, s.z, s.v);
+    this.genCount = this.objs.length;
+    this.genInfo = this.objs.map((o) => ({ hp: o.hp, frame: o.frame, r: o.r }));
+    this.genDone = true;
     this.statics.commit();
     this.shadowsStatic.commit();
     this.px = 0; this.pz = 0; this.py = this.world.height(0, 0);
@@ -192,6 +208,7 @@ export class Game implements HudHost {
 
   decor(frame: string, x: number, z: number, sway = 0, scale = 1) {
     const f = this.atlas.get(frame);
+    if (this.genDone) this.decorLog.push([frame, Math.round(x * 100) / 100, Math.round(z * 100) / 100]);
     this.statics.push({ x, y: this.world.height(x, z), z, frame: f, sway, phase: this.rng() * 6.28, flags: this.rng() < 0.5 ? FLAG_FLIP : 0, scale });
   }
 
@@ -255,7 +272,7 @@ export class Game implements HudHost {
     this.hud.setVisible(false);
   }
 
-  start() {
+  start(resume = false) {
     if (navigator.userActivation?.isActive) this.audio.init();
     if (!this.audioHooked) {
       this.audioHooked = true;
@@ -264,20 +281,41 @@ export class Game implements HudHost {
     }
     if (this.menuFire) { this.removeObj(this.menuFire); this.menuFire = null; this.statics.commit(); }
     this.mode = 'play';
-    this.day = new DayCycle(this.easy);
-    this.day.setPhaseTime('day', 0.04);
-    this.lastPhase = 'day';
-    this.px = 0; this.pz = 0;
+    if (!resume) {
+      this.day = new DayCycle(this.easy);
+      this.day.setPhaseTime('day', 0.04);
+      this.px = 0; this.pz = 0;
+    }
+    this.lastPhase = this.day.phase;
     this.camDistT = 19;
     this.hud.setVisible(true);
     this.hud.rebuildClock(this.day.lens.day / this.day.total, this.day.lens.dusk / this.day.total);
     this.hud.renderInventory();
+    if (resume) { this.hud.showBanner(`第 ${cnNum(this.day.day)} 天`, '继续前行', 4); return; }
     this.hud.showBanner('第 一 天', '在烬野活下去', 4);
     setTimeout(() => this.hintOnce('start', '采集<b>蓑草</b>与<b>枝苗</b>，捡起地上的<b>燧石</b>。按 <span class="k">Tab</span> 打开制作，先做一把<b>燧石斧</b>。', 9), 2500);
   }
 
+  /** 读档继续：按存档种子重建世界并套用差量 */
+  continueGame(d: SaveData) {
+    if (this.menuFire) { this.removeObj(this.menuFire); this.menuFire = null; }
+    this.easy = d.easy;
+    this.hints.clear();
+    this.buildWorld(d.seed);
+    applySave(this, d);
+    this.start(true);
+  }
+  /** 存档；auto=true 为黎明自动存档 */
+  saveGame(auto = false) {
+    if (this.mode !== 'play') return false;
+    const ok = writeSave(this);
+    this.hud.toast(null, ok ? (auto ? '黎明 · 已自动存档' : '进度已保存') : '存档失败（浏览器存储不可用）');
+    return ok;
+  }
+
   audioHooked = false;
   restart() {
+    clearSave();
     this.closeOverlay();
     const seed = (Math.random() * 1e9) | 0;
     const url = new URL(location.href);
@@ -310,6 +348,23 @@ export class Game implements HudHost {
       }
     }
     return best;
+  }
+  /** 画中石环中心（火焰根部）离落脚点的高度（沿广告牌“上”方向，世界单位） */
+  fireCenter(o: WObj): number {
+    const d = (this.atlas.pack as unknown as { fire?: Record<string, { center: number }> } | null)?.fire;
+    return this.atlas.fromPack.has(o.kind) && d?.[o.kind] ? d[o.kind].center : 0.12;
+  }
+  /**
+   * 火堆上的点：先沿广告牌的“上”方向抬到画中石环中心 + up，再朝镜头挪 toward（同时抬高 toward·tanθ，
+   * 画面位置不变、只让它在深度上排到底座前面）。火焰、前排石头、光源、火星烟雾都从这里取位置。
+   */
+  firePoint(o: WObj, up: number, toward: number) {
+    const cu = U.uCamUp.value as THREE.Vector3;
+    let ux = cu.x * 0.55, uy = 0.45 + cu.y * 0.55, uz = cu.z * 0.55;
+    const ul = Math.hypot(ux, uy, uz) || 1; ux /= ul; uy /= ul; uz /= ul;
+    const h = this.fireCenter(o) + up;
+    const tx = Math.sin(this.camYaw), tz = Math.cos(this.camYaw);
+    return { x: o.x + ux * h + tx * toward, y: o.y + uy * h + toward * Math.tan(this.camPitch), z: o.z + uz * h + tz * toward };
   }
   nearFirePit(): WObj | null {
     let best: WObj | null = null, bd = 1e9;
@@ -371,7 +426,8 @@ export class Game implements HudHost {
       const cooked = d.food.cook;
       this.startAnim('craft', 0.5);
       this.audio.ignite();
-      for (let k = 0; k < 10; k++) this.fxAdd.emit({ x: fire.x + (Math.random() - 0.5) * 0.5, y: fire.y + 0.6, z: fire.z + (Math.random() - 0.5) * 0.5, vx: (Math.random() - 0.5) * 2, vy: 2 + Math.random() * 2, vz: (Math.random() - 0.5) * 2, life: 0.8, size: 0.25, color: [1, 0.6, 0.2], type: PT_SPARK, grav: 2 });
+      const fp = this.firePoint(fire, 0.3, 0.2);
+      for (let k = 0; k < 10; k++) this.fxAdd.emit({ x: fp.x + (Math.random() - 0.5) * 0.5, y: fp.y, z: fp.z + (Math.random() - 0.5) * 0.5, vx: (Math.random() - 0.5) * 2, vy: 2 + Math.random() * 2, vz: (Math.random() - 0.5) * 2, life: 0.8, size: 0.25, color: [1, 0.6, 0.2], type: PT_SPARK, grav: 2 });
       setTimeout(() => { this.give(cooked, 1); this.hud.toast(cooked, `烤好了：${ITEMS[cooked].name}`); this.audio.pop(); }, 450);
       this.hintOnce('cooked', '熟食回复更多，有的还能<b>安神</b>。', 6);
       return;
@@ -821,7 +877,8 @@ export class Game implements HudHost {
     o.fuel = Math.min(o.maxFuel, o.fuel + secs);
     if (was <= 0) { this.setObjFrame(o, o.kind === 'firepit' ? 'firepit' : 'campfire'); this.statics.commit(); }
     this.audio.ignite();
-    for (let k = 0; k < 24; k++) this.fxAdd.emit({ x: o.x + (Math.random() - 0.5) * 0.6, y: o.y + 0.4, z: o.z + (Math.random() - 0.5) * 0.6, vx: (Math.random() - 0.5) * 3, vy: 3 + Math.random() * 4, vz: (Math.random() - 0.5) * 3, life: 1.0 + Math.random(), size: 0.18, color: [1, 0.6, 0.2], type: PT_SPARK, grav: 1.5, drag: 1 });
+    const sp = this.firePoint(o, 0, 0.2);
+    for (let k = 0; k < 24; k++) this.fxAdd.emit({ x: sp.x + (Math.random() - 0.5) * 0.6, y: sp.y + 0.1, z: sp.z + (Math.random() - 0.5) * 0.6, vx: (Math.random() - 0.5) * 3, vy: 3 + Math.random() * 4, vz: (Math.random() - 0.5) * 3, life: 1.0 + Math.random(), size: 0.18, color: [1, 0.6, 0.2], type: PT_SPARK, grav: 1.5, drag: 1 });
     o.flash = 0.6;
     this.hud.toast(null, `火焰旺了起来（可烧 ${Math.ceil(o.fuel)} 秒）`);
   }
@@ -1114,16 +1171,20 @@ export class Game implements HudHost {
   onPhase(ph: Phase, newDay: boolean) {
     if (ph === 'dusk') {
       this.audio.duskStinger();
-      this.hud.setVMsg('黄昏降临……天就要黑了');
+      const tide = this.day.day % 3 === 0;
+      this.hud.setVMsg(tide ? '黄昏降临……今夜墨潮将至' : '黄昏降临……天就要黑了');
       setTimeout(() => this.hud.setVMsg(null), 4000);
+      if (tide) setTimeout(() => this.hintOnce('tide', '今夜是<b>墨潮之夜</b>：火烧得更快，<b>潮影</b>会在火光边缘徘徊伸爪。多备柴火，守在火堆旁。', 10), 4500);
       this.hintOnce('dusk', '<b>黄昏</b>了！天黑后没有光就会被黑暗吞噬。准备好<b>营火</b>（Tab → 光与火）或<b>火把</b>。', 9);
     } else if (ph === 'night') {
       this.audio.nightStinger();
-      this.hud.setVMsg('夜，来了');
-      setTimeout(() => this.hud.setVMsg(null), 3500);
+      if (this.isTide()) this.hud.showBanner('墨 潮', '守住火光，熬到天明', 4);
+      else { this.hud.setVMsg('夜，来了'); setTimeout(() => this.hud.setVMsg(null), 3500); }
     } else if (ph === 'day') {
       this.audio.dawn();
       this.hud.showBanner(`第 ${cnNum(this.day.day)} 天`, newDay ? '你又熬过了一夜' : '', 4);
+      if (newDay) setTimeout(() => this.saveGame(true), 1500);
+      if (newDay && (this.day.day - 1) % 3 === 0) setTimeout(() => this.hud.toast(null, '墨潮退去了'), 3000);
       this.hud.rebuildClock(this.day.lens.day / this.day.total, this.day.lens.dusk / this.day.total);
     }
   }
@@ -1166,7 +1227,7 @@ export class Game implements HudHost {
     this.sanity = clamp(this.sanity + r.sa * dt, 0, SANITY_MAX);
     // 黑暗中的噬影
     if (this.day.darkness > 0.6 && light < 0.13) {
-      this.darkT += dt;
+      this.darkT += dt * (this.isTide() ? 1.4 : 1);
       if (this.darkT > 0.8 && this.eyes.length < 3 && Math.random() < dt * 2) {
         const a = Math.random() * Math.PI * 2, d = 3.2 + Math.random() * 2.3;
         this.eyes.push({ x: this.px + Math.cos(a) * d, z: this.pz + Math.sin(a) * d, t: 0 });
@@ -1189,6 +1250,27 @@ export class Game implements HudHost {
       this.darkT = Math.max(0, this.darkT - dt * 2.5);
       this.darkHitT = 0.6;
     }
+    // 墨潮之夜：火光边缘（半明半暗处）的潮影会伸爪；守在火堆中心或添柴撑大光圈
+    if (this.isTide()) {
+      r.sa -= 0.05;
+      if (light >= 0.13 && light < 0.62) {   // 光圈外缘约 0.6r–0.92r
+        this.tideHitT += dt;
+        if (this.tideHitT > (e ? 5.5 : 4.2)) {
+          this.tideHitT = 0;
+          let best: LightSrc | null = null, bd = 1e9;
+          for (const l of this.lights) { const d = Math.hypot(l.x - this.px, l.z - this.pz); if (l.fire && d < bd) { bd = d; best = l; } }
+          const fx = best?.x ?? this.px, fz = best?.z ?? this.pz;
+          const a = Math.atan2(this.pz - fz, this.px - fx);
+          this.tideLunge = { fx, fz, a, d: Math.max(bd, 1) + 2.2, t: 0 };
+          this.audio.shadowStrike();
+          this.invuln = 0;
+          this.damagePlayer(e ? 6 : 9, '墨潮中的潮影', this.px + Math.cos(a) * 1.2, this.pz + Math.sin(a) * 1.2);
+          this.sanity = Math.max(0, this.sanity - 6);
+          this.post.final.uniforms.uFlicker.value = 0.6;
+          this.hintOnce('tide_edge', '<b>火光边缘</b>最危险！靠近<b>火堆中心</b>，或多添柴把光圈撑大。', 8);
+        }
+      } else this.tideHitT = Math.max(0, this.tideHitT - dt * 2);
+    } else this.tideHitT = 0;
     for (const ey of this.eyes) ey.t += dt;
     this.eyes = this.eyes.filter((ey) => ey.t < 4 && this.darkT > 0.5);
     this.shiver = clamp(this.darkT / 2 + (1 - this.sanity / SANITY_MAX) * 0.5 - 0.25);
@@ -1281,12 +1363,13 @@ export class Game implements HudHost {
     // 火
     for (const o of this.grid.query(this.camX, this.camZ, 60, this.q)) {
       if ((o.kind === 'campfire' || o.kind === 'firepit') && o.fuel > 0) {
-        if (o !== this.menuFire) o.fuel -= dt;
+        if (o !== this.menuFire) o.fuel -= dt * (this.isTide() ? 1.6 : 1);   // 墨潮之夜火烧得更快
         if (o.fuel <= 0) {
           o.fuel = 0;
           this.setObjFrame(o, o.kind === 'firepit' ? 'firepit_burnt' : 'campfire_burnt');
           this.statics.commit();
-          for (let k = 0; k < 12; k++) this.fxNorm.emit({ x: o.x, y: o.y + 0.3, z: o.z, vx: (Math.random() - 0.5), vy: 1 + Math.random(), vz: (Math.random() - 0.5), life: 3, size: 0.6, grow: 0.8, color: [0.3, 0.28, 0.27], a: 0.5, type: PT_SMOKE, drag: 1 });
+          const sp = this.firePoint(o, 0, 0.2);
+          for (let k = 0; k < 12; k++) this.fxNorm.emit({ x: sp.x, y: sp.y + 0.1, z: sp.z, vx: (Math.random() - 0.5), vy: 1 + Math.random(), vz: (Math.random() - 0.5), life: 3, size: 0.6, grow: 0.8, color: [0.3, 0.28, 0.27], a: 0.5, type: PT_SMOKE, drag: 1 });
         } else if (o.fuel < 20 && Math.hypot(o.x - this.px, o.z - this.pz) < 8) this.hintOnce('lowfire', '火快灭了！点击火堆或在物品栏<b>右键</b>木头/干草来<b>添柴</b>。', 7);
       }
       if (o.flash > 0 || o.shake > 0) this.fxObjs.add(o);
@@ -1461,6 +1544,7 @@ export class Game implements HudHost {
       this.camX += (lx - this.camX) * kk; this.camZ += (lz - this.camZ) * kk;
     }
     const pitch = 0.86 + clamp((this.camDist - 11) / 23) * 0.18;
+    this.camPitch = pitch;
     const ty = this.world.height(this.camX, this.camZ) + 1.1;
     const cp = Math.cos(pitch), sp = Math.sin(pitch);
     this.camShake = Math.max(0, this.camShake - dt * 1.8);
@@ -1487,7 +1571,8 @@ export class Game implements HudHost {
       if ((o.kind !== 'campfire' && o.kind !== 'firepit') || o.fuel <= 0) continue;
       const f = Math.min(1, o.fuel / 60);
       const fl = 1 + Math.sin(t * 13 + o.id) * 0.06 + Math.sin(t * 23.7 + o.id * 3) * 0.05 + (Math.random() - 0.5) * 0.06;
-      L.push({ x: o.x, y: o.y + 1.1, z: o.z, r: (4.5 + 8 * f + (o.kind === 'firepit' ? 1.5 : 0)) * fl, c: [1.0, 0.52, 0.2], i: (1.5 + 0.5 * f) * fl, fire: true });
+      const lp = this.atlas.fromPack.has(o.kind) ? this.firePoint(o, 0.55, 0.2) : { x: o.x, y: o.y + 1.1, z: o.z };
+      L.push({ x: lp.x, y: lp.y, z: lp.z, r: (4.5 + 8 * f + (o.kind === 'firepit' ? 1.5 : 0)) * fl, c: [1.0, 0.52, 0.2], i: (1.5 + 0.5 * f) * fl, fire: true });
     }
     const h = this.inv.equip.hand;
     if (h && ITEMS[h.id].light && this.mode !== 'menu') {
@@ -1499,10 +1584,12 @@ export class Game implements HudHost {
     }
     L.sort((a, b) => Math.hypot(a.x - this.camX, a.z - this.camZ) - Math.hypot(b.x - this.camX, b.z - this.camZ));
     this.lights = L;
+    const vis = 0.2 + 0.8 * this.day.darkness;
     for (let i = 0; i < MAX_LIGHTS; i++) {
       const p = U.uLightPos.value[i], c = U.uLightCol.value[i];
       const l = L[i];
-      if (l) { p.set(l.x, l.y, l.z, l.r); c.set(l.c[0], l.c[1], l.c[2], l.i); }
+      // 视觉强度与玩法亮度分开：白天火光只是一点暖意，夜里才是主光源
+      if (l) { p.set(l.x, l.y, l.z, l.r * (l.fire ? 0.95 : 0.9)); c.set(l.c[0], l.c[1], l.c[2], l.i * (l.fire ? 0.68 : 0.75) * vis); }
       else { p.set(0, -100, 0, 1); c.set(0, 0, 0, 0); }
     }
     // 音频
@@ -1577,8 +1664,18 @@ export class Game implements HudHost {
       if ((o.kind === 'campfire' || o.kind === 'firepit') && o.fuel > 0) {
         const f = Math.min(1, o.fuel / 70);
         const fr = Math.floor(t * 12 + o.id * 1.7) % 6;
-        const sc = (0.55 + 0.6 * f) * (o.kind === 'firepit' ? 1.1 : 1) * (1 + Math.sin(t * 9 + o.id) * 0.04);
-        D.push({ x: o.x, y: o.y + 0.12, z: o.z + 0.05, frame: this.atlas.get(`flame${fr}`), flags: FLAG_EMISSIVE | ((fr & 1) ? FLAG_FLIP : 0), scale: sc, sway: 0.04, phase: o.id });
+        const painted = this.atlas.fromPack.has(o.kind);
+        // 手绘石环内径约 1.05 单位：火焰尺寸收在环内，随燃料增减
+        const sc = (painted ? (o.kind === 'firepit' ? 0.5 + 0.55 * f : 0.44 + 0.5 * f) : (0.55 + 0.6 * f) * (o.kind === 'firepit' ? 1.1 : 1)) * (1 + Math.sin(t * 9 + o.id) * 0.04);
+        // 火焰根部略低于石环中心，让前排石头和柴头压住火焰底部
+        const fp = painted ? this.firePoint(o, -0.1, 0.2) : { x: o.x, y: o.y + 0.12, z: o.z + 0.05 };
+        D.push({ x: fp.x, y: fp.y, z: fp.z, frame: this.atlas.get(`flame${fr}`), flags: FLAG_EMISSIVE | ((fr & 1) ? FLAG_FLIP : 0), scale: sc, sway: 0.04, phase: o.id });
+        // 前排石头层：与底座同一画面位置，但深度在火焰之前
+        const front = this.atlas.frames.get(o.kind + '_front');
+        if (painted && front) {
+          const tx = Math.sin(this.camYaw), tz = Math.cos(this.camYaw), dd = 0.42;
+          D.push({ x: o.x + tx * dd, y: o.y + dd * Math.tan(this.camPitch), z: o.z + tz * dd, frame: front, flags: this.objFlip(o) ? FLAG_FLIP : 0 });
+        }
       }
     }
     // 墨蛛
@@ -1625,6 +1722,31 @@ export class Game implements HudHost {
       const sx = this.px + Math.cos(a) * d, sz = this.pz + Math.sin(a) * d;
       D.push({ x: sx, y: this.world.height(sx, sz) + 0.1 + Math.sin(t * 1.7) * 0.12, z: sz, frame: this.atlas.get('shade'), flags: FLAG_EMISSIVE | (sx < this.px ? FLAG_FLIP : 0), fade: 1 - (0.3 + 0.55 * k + 0.15 * strike), sway: 0.06, phase: 3, scale: 0.9 + 0.15 * strike });
     }
+    // 墨潮之夜：潮影绕着火光边缘游弋，伸爪时扑向主角
+    this.tideK += ((this.isTide() ? 1 : 0) - this.tideK) * (1 - Math.exp(-dt * 0.8));
+    if (this.tideK > 0.02 && this.atlas.frames.has('shade')) {
+      const shade = this.atlas.get('shade');
+      for (const l of this.lights) {
+        if (!l.fire || Math.hypot(l.x - this.px, l.z - this.pz) > 30) continue;
+        const n = 5, base = (l.x * 0.37 + l.z * 0.71) % 6.28;
+        for (let i = 0; i < n; i++) {
+          const a = base + t * 0.12 * (i % 2 ? 1 : -1) + (i / n) * Math.PI * 2 + Math.sin(t * 0.5 + i) * 0.25;
+          const rr = l.r * 0.7 + Math.sin(t * 0.9 + i * 1.7) * 0.6;
+          const sx = l.x + Math.cos(a) * rr, sz = l.z + Math.sin(a) * rr;
+          const fl = 0.5 + 0.5 * Math.sin(t * 2.3 + i * 2.1);
+          D.push({ x: sx, y: this.world.height(sx, sz) + 0.05 + Math.sin(t * 1.4 + i) * 0.1, z: sz, frame: shade, flags: FLAG_EMISSIVE | (sx > l.x ? FLAG_FLIP : 0), fade: 1 - this.tideK * (0.35 + 0.3 * fl), sway: 0.08, phase: i, scale: 0.75 + 0.1 * Math.sin(i * 3.1) });
+        }
+      }
+      const L = this.tideLunge;
+      if (L) {
+        L.t += dt;
+        const k = L.t < 0.25 ? L.t / 0.25 : Math.max(0, 1 - (L.t - 0.25) / 0.5);
+        const d = L.d - k * (L.d - Math.hypot(this.px - L.fx, this.pz - L.fz) - 0.4);
+        const sx = L.fx + Math.cos(L.a) * d, sz = L.fz + Math.sin(L.a) * d;
+        D.push({ x: sx, y: this.world.height(sx, sz) + 0.1, z: sz, frame: shade, flags: FLAG_EMISSIVE | (sx < this.px ? FLAG_FLIP : 0), fade: 1 - 0.9 * Math.min(1, k * 1.5), scale: 1 + 0.15 * k, sway: 0.1, phase: 1 });
+        if (L.t > 0.8) this.tideLunge = null;
+      }
+    }
     // 放置虚影
     if (this.placing) {
       const p = this.placing;
@@ -1644,6 +1766,11 @@ export class Game implements HudHost {
     if (A) { action = A.a; actionT = clamp(A.t / A.dur); }
     else if (this.eatAnim > 0) { action = 'eat'; actionT = 1 - this.eatAnim / 0.7; }
     const e = this.inv.equip;
+    if (this.playerArt instanceof HeroRig) {
+      // 地面速度在画面中的方向：镜头右方为 +x，朝向镜头为 +y
+      const rx = Math.cos(this.camYaw), rz = -Math.sin(this.camYaw), fx = -Math.sin(this.camYaw), fz = -Math.cos(this.camYaw);
+      this.playerArt.setVelocity(this.pvx * rx + this.pvz * rz, -(this.pvx * fx + this.pvz * fz), Math.hypot(this.pvx, this.pvz));
+    }
     this.playerArt.draw({
       t: this.playerDrawT, facing: this.facing, flip: this.flip, walk: this.walkPhase, moving: this.moving,
       action, actionT, held: e.hand?.id ?? null, armor: e.body?.id ?? null, head: e.head?.id ?? null, back: e.back?.id ?? null,
@@ -1685,10 +1812,10 @@ export class Game implements HudHost {
     const ins = this.mode === 'menu' ? 0 : clamp((0.6 - this.sanity / SANITY_MAX) / 0.6);
     f.uInsane.value += (ins - f.uInsane.value) * (1 - Math.exp(-dt * 2));
     f.uHurt.value = Math.max(this.hurtT, this.mode === 'play' ? clamp((0.3 - this.hp / HP_MAX) / 0.3) * (0.5 + 0.5 * Math.sin(this.time * 5)) * 0.6 : 0);
-    f.uDark.value = clamp(this.darkT / 3.2);
+    f.uDark.value = Math.max(clamp(this.darkT / 3.2), this.tideK * 0.2);   // 墨潮之夜：墨色从画面边缘渗入
     f.uFlicker.value = Math.max(0, f.uFlicker.value - dt * 2.5);
     if (ins > 0.6 && Math.random() < dt * 0.3) f.uFlicker.value = 0.6;
-    f.uExposure.value = 1.0 + this.day.darkness * 0.2;
+    f.uExposure.value = 1.0 + this.day.darkness * 0.45;   // 夜里略提曝光：火光外缘能看清剪影，核心由软肩与 ACES 压住
     if (this.mode !== 'dead') f.uFade.value = Math.max(0, f.uFade.value - dt);
   }
 
@@ -1739,6 +1866,7 @@ export class Game implements HudHost {
       if (act === 'close') this.closeOverlay();
       else if (act === 'restart') this.restart();
       else if (act === 'help') this.showHelp();
+      else if (act === 'save') { if (this.saveGame()) this.closeOverlay(); }
     });
     this.overlay = o;
     this.hud.setHover(null);
@@ -1747,7 +1875,7 @@ export class Game implements HudHost {
   closeOverlay() { if (this.overlay) { this.overlay.remove(); this.overlay = null; } }
   showPause() {
     this.audio.uiOpen();
-    this.openOverlay('pause', `<h2>暂停</h2><div class="lead">第 ${this.day.day} 天 · ${({ day: '白昼', dusk: '黄昏', night: '夜' } as const)[this.day.phase]}</div>${helpHtml()}<div class="row"><button class="btn primary" data-act="close">继续</button><button class="btn ghost" data-act="restart">重新开始</button></div>`);
+    this.openOverlay('pause', `<h2>暂停</h2><div class="lead">第 ${this.day.day} 天 · ${({ day: '白昼', dusk: '黄昏', night: '夜' } as const)[this.day.phase]}</div>${helpHtml()}<div class="row"><button class="btn primary" data-act="close">继续</button><button class="btn ghost" data-act="save">保存进度</button><button class="btn ghost" data-act="restart">重新开始</button></div>`);
   }
   showHelp() {
     this.audio.uiOpen();
@@ -1775,6 +1903,7 @@ export class Game implements HudHost {
   die(cause: string) {
     if (this.mode !== 'play') return;
     this.mode = 'dead'; this.hp = Math.max(0, this.hp);
+    clearSave();   // 死亡即结束本局
     this.deathCause = cause;
     this.action = null; this.target = null; this.deadT = 0;
     this.cancelPlace();

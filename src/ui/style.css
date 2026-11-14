@@ -25,6 +25,7 @@ canvas#gl { position: fixed; inset: 0; width: 100vw; height: 100vh; display: blo
 .btn.primary::before { background-image: var(--brush-red); }
 .btn.ghost::before { background-image: var(--brush-dark); }
 .btn:hover::before { transform: scale(1.05) rotate(-0.8deg); filter: brightness(1.25); }
+.btn .save-info { display: block; font-size: 13px; letter-spacing: .12em; opacity: .78; margin-top: 2px; }
 .btn:hover { color: #fff6e0; }
 .btn .k { font-size: 14px; opacity: .6; margin-left: 10px; letter-spacing: .1em; }
 #menu .foot { position: absolute; bottom: 24px; left: 9vw; font-size: 13px; opacity: .5; letter-spacing: .1em; }

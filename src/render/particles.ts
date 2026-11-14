@@ -23,7 +23,7 @@ void main() {
   vRot = aParams.z;
   vec3 rim;
   vec3 l = uAmbient + uSunColor * uSunInt * 0.8 + pointLights(position, rim);
-  vLight = mix(vec3(1.0), l, uLit);
+  vLight = mix(vec3(1.0), softLight(l), uLit);
   vec3 wp = position;
   float d = distance(wp, uCamPos);
   vColor.a *= 1.0 - smoothstep(uFogNear, uFogFar, d) * 0.8;

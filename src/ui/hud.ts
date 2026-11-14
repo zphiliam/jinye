@@ -416,7 +416,7 @@ export function helpHtml(): string {
    <div><span>旋转视角</span><kbd>Q</kbd> <kbd>R</kbd></div>
    <div><span>缩放视角</span><kbd>滚轮</kbd></div>
    <div><span>地图</span><kbd>M</kbd></div>
-   <div><span>暂停</span><kbd>Esc</kbd> / <kbd>P</kbd></div>
+   <div><span>暂停 / 保存进度</span><kbd>Esc</kbd> / <kbd>P</kbd></div>
    <div><span>帮助</span><kbd>H</kbd></div>
    <div><span>静音</span><kbd>N</kbd></div>
    <div><span>取消安放</span><kbd>右键</kbd> / <kbd>Esc</kbd></div>
@@ -426,6 +426,8 @@ export function helpHtml(): string {
    <b>黑夜：</b>没有光的地方，<b>噬影</b>会撕咬你。营火或手持火把/提灯能划出安全的光圈。<br>
    <b>饥饿：</b>赤莓、野萝卜可生吃；在火边右键食物烤熟，回复更多，还能安神。<br>
    <b>理智：</b>入夜、黑暗、怪物会侵蚀心神。靠近火堆、采花、戴花冠、吃炙伞菇可以恢复。<br>
+   <b>墨潮之夜：</b>每第三夜墨潮涌来，火烧得更快，<b>潮影</b>在火光边缘游弋伸爪——守在火堆中心，备足柴火。<br>
+   <b>存档：</b>每天黎明自动存档，也可在暂停菜单里手动保存；关闭页面时会顺手保存。死亡后存档清除。<br>
    <b>墨蛛：</b>白天在巢中沉睡，入夜外出觅食。它扑击前会<b>先立起身子、双眼发亮</b>——此时后撤，扑空后反击。<br>
    <b>研机台：</b>站在旁边可研制二阶器物；研制过一次的配方，之后在哪都能做。
   </div>`;

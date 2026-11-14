@@ -47,13 +47,21 @@ vec3 pointLights(vec3 wp, out vec3 rimDirAcc) {
     vec3 d = lp.xyz - wp;
     float dist = length(vec3(d.x, d.y * 0.6, d.z));
     float t = clamp(1.0 - dist / lp.w, 0.0, 1.0);
-    float att = t * t * (3.0 - 2.0 * t) * t;
+    // 平方衰减：核心明亮、边缘柔和地沉入黑暗；中心只留一点暖白，不再整片漂白
+    // 线性尾巴：光圈边缘仍有一圈昏暗的暖光，与玩法上的“安全光圈”大致吻合
+    float att = t * t * 0.55 + t * 0.45;
     vec3 c = lc.rgb * lc.w * att;
-    c += vec3(1.0, 0.85, 0.6) * pow(t, 6.0) * lc.w * 0.6;
+    c += vec3(1.0, 0.78, 0.5) * pow(t, 8.0) * lc.w * 0.22;
     acc += c;
     rimDirAcc += vec3(normalize(d.xz + 1e-4) * att * lc.w, att * lc.w).xzy;
   }
   return acc;
+}
+
+// 光照软肩：总照度超过 1 后渐进压缩，火边的纸色不会被乘爆成白色
+vec3 softLight(vec3 l) {
+  vec3 o = max(l - 1.0, 0.0);
+  return min(l, 1.0) + o / (1.0 + o * 1.4);
 }
 
 vec3 applyFog(vec3 col, vec3 wp) {
