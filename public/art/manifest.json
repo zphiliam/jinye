@@ -884,6 +884,141 @@
     0.5,
     1.0
    ]
+  },
+  "rig_f_head": {
+   "file": "rig_f_head.png",
+   "w": 66,
+   "h": 120,
+   "pivot": [
+    0.5,
+    1.0
+   ]
+  },
+  "rig_f_torso": {
+   "file": "rig_f_torso.png",
+   "w": 94,
+   "h": 152,
+   "pivot": [
+    0.5,
+    1.0
+   ]
+  },
+  "rig_f_skirt": {
+   "file": "rig_f_skirt.png",
+   "w": 92,
+   "h": 112,
+   "pivot": [
+    0.5,
+    1.0
+   ]
+  },
+  "rig_f_armL": {
+   "file": "rig_f_armL.png",
+   "w": 54,
+   "h": 115,
+   "pivot": [
+    0.5,
+    1.0
+   ]
+  },
+  "rig_f_armR": {
+   "file": "rig_f_armR.png",
+   "w": 52,
+   "h": 117,
+   "pivot": [
+    0.5,
+    1.0
+   ]
+  },
+  "rig_f_legL": {
+   "file": "rig_f_legL.png",
+   "w": 49,
+   "h": 154,
+   "pivot": [
+    0.5,
+    1.0
+   ]
+  },
+  "rig_f_legR": {
+   "file": "rig_f_legR.png",
+   "w": 50,
+   "h": 155,
+   "pivot": [
+    0.5,
+    1.0
+   ]
+  },
+  "rig_b_head": {
+   "file": "rig_b_head.png",
+   "w": 77,
+   "h": 117,
+   "pivot": [
+    0.5,
+    1.0
+   ]
+  },
+  "rig_b_torso": {
+   "file": "rig_b_torso.png",
+   "w": 87,
+   "h": 135,
+   "pivot": [
+    0.5,
+    1.0
+   ]
+  },
+  "rig_b_skirt": {
+   "file": "rig_b_skirt.png",
+   "w": 90,
+   "h": 112,
+   "pivot": [
+    0.5,
+    1.0
+   ]
+  },
+  "rig_b_armL": {
+   "file": "rig_b_armL.png",
+   "w": 52,
+   "h": 117,
+   "pivot": [
+    0.5,
+    1.0
+   ]
+  },
+  "rig_b_armR": {
+   "file": "rig_b_armR.png",
+   "w": 49,
+   "h": 117,
+   "pivot": [
+    0.5,
+    1.0
+   ]
+  },
+  "rig_b_legL": {
+   "file": "rig_b_legL.png",
+   "w": 45,
+   "h": 153,
+   "pivot": [
+    0.5,
+    1.0
+   ]
+  },
+  "rig_b_legR": {
+   "file": "rig_b_legR.png",
+   "w": 60,
+   "h": 154,
+   "pivot": [
+    0.5,
+    1.0
+   ]
+  },
+  "rig_b_scarf": {
+   "file": "rig_b_scarf.png",
+   "w": 69,
+   "h": 123,
+   "pivot": [
+    0.5,
+    1.0
+   ]
   }
  },
  "keys": {
@@ -1805,6 +1940,205 @@
     "sole": [
      35.1,
      100.8
+    ]
+   },
+   "f_head": {
+    "file": "rig_f_head.png",
+    "w": 66,
+    "h": 120,
+    "joint": [
+     33.0,
+     62.6
+    ],
+    "hatJoint": [
+     33.0,
+     25.6
+    ]
+   },
+   "f_torso": {
+    "file": "rig_f_torso.png",
+    "w": 94,
+    "h": 152,
+    "joint": [
+     45.5,
+     90.7
+    ],
+    "neck": [
+     46.8,
+     3.9
+    ],
+    "shL": [
+     17.9,
+     21.5
+    ],
+    "shR": [
+     77.1,
+     21.5
+    ]
+   },
+   "f_skirt": {
+    "file": "rig_f_skirt.png",
+    "w": 92,
+    "h": 112,
+    "joint": [
+     43.0,
+     3.3
+    ]
+   },
+   "f_armL": {
+    "file": "rig_f_armL.png",
+    "w": 54,
+    "h": 115,
+    "joint": [
+     25.9,
+     4.4
+    ],
+    "hand": [
+     27.0,
+     106.5
+    ]
+   },
+   "f_armR": {
+    "file": "rig_f_armR.png",
+    "w": 52,
+    "h": 117,
+    "joint": [
+     24.1,
+     4.5
+    ],
+    "hand": [
+     24.0,
+     108.5
+    ]
+   },
+   "f_legL": {
+    "file": "rig_f_legL.png",
+    "w": 49,
+    "h": 154,
+    "joint": [
+     25.9,
+     3.8
+    ],
+    "sole": [
+     22.1,
+     151.7
+    ]
+   },
+   "f_legR": {
+    "file": "rig_f_legR.png",
+    "w": 50,
+    "h": 155,
+    "joint": [
+     24.1,
+     3.8
+    ],
+    "sole": [
+     27.4,
+     152.7
+    ]
+   },
+   "b_head": {
+    "file": "rig_b_head.png",
+    "w": 77,
+    "h": 117,
+    "joint": [
+     38.0,
+     52.6
+    ],
+    "hatJoint": [
+     38.0,
+     18.7
+    ]
+   },
+   "b_torso": {
+    "file": "rig_b_torso.png",
+    "w": 87,
+    "h": 135,
+    "joint": [
+     43.3,
+     80.5
+    ],
+    "neck": [
+     42.8,
+     3.8
+    ],
+    "shL": [
+     13.6,
+     19.3
+    ],
+    "shR": [
+     72.9,
+     19.3
+    ]
+   },
+   "b_skirt": {
+    "file": "rig_b_skirt.png",
+    "w": 90,
+    "h": 112,
+    "joint": [
+     41.6,
+     3.7
+    ]
+   },
+   "b_armL": {
+    "file": "rig_b_armL.png",
+    "w": 52,
+    "h": 117,
+    "joint": [
+     25.1,
+     4.4
+    ],
+    "hand": [
+     19.7,
+     108.5
+    ]
+   },
+   "b_armR": {
+    "file": "rig_b_armR.png",
+    "w": 49,
+    "h": 117,
+    "joint": [
+     22.5,
+     4.5
+    ],
+    "hand": [
+     23.9,
+     108.5
+    ]
+   },
+   "b_legL": {
+    "file": "rig_b_legL.png",
+    "w": 45,
+    "h": 153,
+    "joint": [
+     24.7,
+     4.1
+    ],
+    "sole": [
+     21.4,
+     150.4
+    ]
+   },
+   "b_legR": {
+    "file": "rig_b_legR.png",
+    "w": 60,
+    "h": 154,
+    "joint": [
+     21.8,
+     4.1
+    ],
+    "sole": [
+     27.6,
+     151.4
+    ]
+   },
+   "b_scarf": {
+    "file": "rig_b_scarf.png",
+    "w": 69,
+    "h": 123,
+    "joint": [
+     11.2,
+     6.4
     ]
    }
   },

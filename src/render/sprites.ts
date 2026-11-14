@@ -81,7 +81,9 @@ void main() {
   if (alpha < bayer(gl_FragCoord.xy) * 0.9 + 0.05) discard;
   vec3 col = tex.rgb;
   if (emissive) {
-    vec3 e = col * 1.6;
+    // 白天火焰保持本色（不再是苍白的形状），夜里更亮、触发泛光
+    vec3 e = col * mix(1.05, 1.3, uNight);
+    e = max(mix(vec3(dot(e, vec3(0.3, 0.5, 0.2))), e, 1.3), 0.0);
     e = applyFog(e, vWorld) * 0.4 + e * 0.6;
     gl_FragColor = vec4(e, 1.0);
     return;
@@ -113,7 +115,7 @@ void main() {
     light += vec3(1.0, 0.62, 0.3) * edge * min(rimStr, 1.2) * 0.9;
   }
   light += uSunColor * sunRim * 0.8;
-  col *= light;
+  col *= softLight(light);
   col = mix(col, col * vec3(0.5, 0.45, 0.4), vFx.w);
   col = mix(col, vec3(1.0, 0.92, 0.85), vFx.x);
   col = applyFog(col, vWorld);

@@ -75,7 +75,7 @@ void main() {
   vec3 light = uAmbient * (0.75 + 0.25 * N.y) + uSunColor * uSunInt * (0.35 + 0.85 * diff);
   vec3 rimAcc;
   light += pointLights(vWorld, rimAcc);
-  col *= light;
+  col *= softLight(light);
   col = applyFog(col, vWorld);
   gl_FragColor = vec4(col, 1.0);
 }

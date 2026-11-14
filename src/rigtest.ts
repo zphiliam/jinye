@@ -17,7 +17,10 @@ for (const h of (q.get('hide') ?? '').split(',').filter(Boolean)) HeroRig.hide.a
     { label: '砍伐', n: 10, pose: (i, n) => ({ action: 'chop' as Action, actionT: i / (n - 1), held: 'axe', t: 3 + i * 0.05 }) },
     { label: '长矛攻击', n: 10, pose: (i, n) => ({ action: 'attack' as Action, actionT: i / (n - 1), held: 'spear', t: 3 + i * 0.04 }) },
     { label: '斧攻击 / 空手 / 拾取', n: 10, pose: (i, n) => i < 5 ? ({ action: 'attack' as Action, actionT: i / 4, held: 'axe' }) : i < 8 ? ({ action: 'attack' as Action, actionT: (i - 5) / 2 * 0.46, held: null }) : ({ action: 'pickup' as Action, actionT: 0.5 }) },
-    { label: '朝镜头走（下） / 远离（上）', n: 10, vel: [0, 1], pose: (i, n) => ({ moving: true, walk: ((i % 5) / 5) * 2.2 * 2.1, t: 5 + i / 20 }) },
+    { label: '正面：朝镜头走（一个周期）', n: 10, vel: [0, 1], pose: (i, n) => ({ facing: 'down', moving: true, walk: (i / n) * 2.2 * 2.1, t: 5 + i / 20 }) },
+    { label: '背面：远离镜头走（一个周期）', n: 10, vel: [0, -1], pose: (i, n) => ({ facing: 'up', moving: true, walk: (i / n) * 2.2 * 2.1, t: 5 + i / 20 }) },
+    { label: '正面/背面 待机 · 火把 · 提灯 · 斧', n: 10, vel: [0, 1], pose: (i) => ({ facing: i % 2 ? 'up' : 'down', t: 10 + i * 0.4, held: [null, null, 'torch', 'torch', 'lantern', 'lantern', 'axe', 'axe', 'spear', 'spear'][i] }) },
+    { label: '穿戴：蓑衣甲+背囊+花冠 / 木片甲（侧·正·背）', n: 10, vel: [-1, 0], pose: (i, n) => ({ facing: (['side', 'down', 'up', 'side', 'down', 'up', 'side', 'down', 'up', 'down'] as const)[i], moving: i > 5, walk: (i / n) * 4.6, t: 6 + i / 7, armor: i < 3 ? 'armor_grass' : i < 6 ? 'armor_wood' : i % 2 ? 'armor_grass' : 'armor_wood', back: i < 3 || i > 5 ? 'backpack' : null, head: 'garland', held: i === 9 ? 'torch' : null }) },
   ];
   const cw = 460 * scale, ch = 420 * scale;
   const cv = document.getElementById('c') as HTMLCanvasElement;
@@ -27,7 +30,7 @@ for (const h of (q.get('hide') ?? '').split(',').filter(Boolean)) HeroRig.hide.a
   rows.forEach((row, ri) => {
     for (let i = 0; i < row.n; i++) {
       const rig = new HeroRig(pack);
-      if (row.vel) rig.setVelocity(row.vel[0], i < 5 ? row.vel[1] : -row.vel[1], 5);
+      if (row.vel) rig.setVelocity(row.vel[0], row.vel[1], 5);
       else rig.setVelocity(-1, 0, 5);
       const base: PlayerPose = { t: 1, facing: 'side', flip: true, walk: 0, moving: false, action: 'none', actionT: 0, held: null, armor: null, head: null, back: null, shiver: 0, dead: false };
       const pz = { ...base, ...row.pose(i, row.n) } as PlayerPose;

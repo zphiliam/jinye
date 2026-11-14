@@ -69,6 +69,8 @@ const PUNCH: Key[] = [ // 空手：[近手x, 近手y, 前倾, 下沉, 前脚, �
   { t: 1, v: [-18, -170, 0.04, 3, -18, 18], ease: smooth },
 ];
 
+const FB_PARTS = ['head', 'torso', 'skirt', 'armL', 'armR', 'legL', 'legR'].flatMap((k) => ['f_' + k, 'b_' + k]).concat('b_scarf');
+
 /** 各关节的平滑状态 */
 interface Joints { [k: string]: number }
 
@@ -87,6 +89,11 @@ export class HeroRig {
   private strip = document.createElement('canvas');
   /** 地面速度在画面中的方向（由游戏传入）；默认横向 */
   private vel = { x: -1, y: 0, s: 0 };
+  /** 正面/背面部件套件是否齐全（朝镜头 / 背向镜头行走） */
+  private fbOK = false;
+  private fbCur: Joints = {};
+  /** 穿戴物立绘（取资源包图标） */
+  private gear: Record<string, HTMLImageElement | undefined> = {};
 
   static usable(pack: ArtPack | null): boolean {
     const r = (pack as unknown as { rig?: RigData } | null)?.rig;
@@ -116,6 +123,8 @@ export class HeroRig {
     this.L.upF = seg(this.P.upperF, 'elbow'); this.L.foF = seg(this.P.foreF, 'grip');
     this.L.ank = this.P.shinN.pts.sole.y - this.P.shinN.pts.ankle.y;
     this.hipH = (this.L.th + this.L.sh) * 0.965 + this.L.ank;
+    this.fbOK = FB_PARTS.every((k) => !!this.P[k]?.img);
+    for (const id of ['armor_grass', 'armor_wood', 'backpack', 'garland']) this.gear[id] = pack.images.get('icon_' + id);
   }
 
   /** 游戏传入角色在画面中的移动方向（右为 +x、朝镜头为 +y）与速率（单位/秒） */
@@ -187,6 +196,11 @@ export class HeroRig {
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.clearRect(0, 0, cv.width, cv.height);
     c.translate(cv.width / 2, cv.height - this.pad);
+    // 朝镜头 / 背向镜头：使用正面、背面部件（动作仍用侧面姿势）
+    if (this.fbOK && (p.facing === 'down' || p.facing === 'up') && !p.dead && p.action === 'none') {
+      this.drawFB(p.facing === 'down' ? 'f' : 'b', p, dt);
+      return;
+    }
     // 立绘朝左；朝右时整体镜像
     if (!p.flip) c.scale(-1, 1);
     if (p.dead) { c.translate(0, -24); c.rotate(-Math.PI / 2 * 0.92); c.translate(30, 0); }
@@ -387,14 +401,36 @@ export class HeroRig {
     const kneeMid = (lgN.knee.x + lgF.knee.x) / 2 - pelvis.x;
     const skF = flutter(moving ? 2.2 : 0.8, moving ? 11 : 2.6, 4);
     this.warped('skirt', add(waist, rot({ x: 1, y: -5 }, torsoR)), torsoR * 0.45, (u) => u * (kneeMid * 0.45 + (moving ? 3 : 0)) + skF(u) + skirtSway);
+    // 背囊（身后）
+    const neckRel = this.vec('torso', 'neck');
+    const pack = p.back ? this.gear[p.back] : undefined;
+    if (pack) {
+      c.save(); c.translate(waist.x, waist.y); c.rotate(torsoR * 0.9);
+      const s = 0.5; c.drawImage(pack, 30 - pack.naturalWidth * s / 2, neckRel.y + 4, pack.naturalWidth * s, pack.naturalHeight * s); c.restore();
+    }
     // 躯干（横向缩放模拟扭转）
     c.save(); c.translate(waist.x, waist.y); c.rotate(torsoR); c.scale(1 - Math.abs(J.twist) * 0.6, 1 + Math.sin(t * 2.0) * (moving ? 0 : 0.006));
-    c.drawImage(this.P.torso.img, -this.P.torso.j.x + J.twist * 30, -this.P.torso.j.y); c.restore();
+    c.drawImage(this.P.torso.img, -this.P.torso.j.x + J.twist * 30, -this.P.torso.j.y);
+    // 护甲（贴合躯干，侧面略收窄）
+    const arm = p.armor ? this.gear[p.armor] : undefined;
+    if (arm) {
+      const tw = this.P.torso.img.naturalWidth, cx = -this.P.torso.j.x + tw / 2 + J.twist * 30;
+      const w = tw * 1.1, h = -neckRel.y + 20;
+      c.drawImage(arm, cx - w / 2 - 2, neckRel.y - 2, w, h);
+    }
+    if (pack) {   // 背带斜过胸前
+      c.strokeStyle = '#4a321c'; c.lineWidth = 4.5; c.lineCap = 'round';
+      c.beginPath(); c.moveTo(14, neckRel.y + 10); c.quadraticCurveTo(-2, neckRel.y + 34, -18, neckRel.y + 52); c.stroke();
+      c.strokeStyle = 'rgba(150,110,60,0.6)'; c.lineWidth = 1.5; c.stroke();
+    }
+    c.restore();
     // 头与斗笠（滞后）
     const headR = torsoR * 0.55 + J.headTilt;
     this.part('head', neck, headR);
     const hatAt = add(neck, rot({ x: this.P.head.pts.hatJoint.x - this.P.head.j.x, y: this.P.head.pts.hatJoint.y - this.P.head.j.y + J.hatLag * 0.6 }, headR));
+    this.garland(p.head, hatAt, headR + J.hatLag * 0.012, 'back');
     this.part('hat', hatAt, headR + J.hatLag * 0.012);
+    this.garland(p.head, hatAt, headR + J.hatLag * 0.012, 'front');
     // 工具（身前）与近侧手臂
     if (tool && toolHand && !toolBehind) {
       if (held === 'torch' || held === 'lantern') { this.drawTool(tool, held, toolHand, toolAng, toolGrip); }
@@ -402,5 +438,162 @@ export class HeroRig {
     }
     this.part('upperN', shN, armSN.up);
     this.part('foreN', armSN.elbow, armSN.fo);
+  }
+
+  /** 花冠：压扁成环套在斗笠上；后半圈画在斗笠之前，前半圈画在之后 */
+  private garland(id: string | null, hatAt: V, r: number, half: 'back' | 'front') {
+    const g = id ? this.gear[id] : undefined;
+    if (!g || HeroRig.hide.has('garland')) return;
+    const c = this.ctx, w = g.naturalWidth, h = g.naturalHeight, k = 70 / w;
+    c.save(); c.translate(hatAt.x, hatAt.y); c.rotate(r); c.translate(0, -8); c.scale(k, k * 0.45);
+    if (half === 'back') c.drawImage(g, 0, 0, w, h / 2, -w / 2, -h / 2, w, h / 2);
+    else c.drawImage(g, 0, h / 2, w, h / 2, -w / 2, 0, w, h / 2);
+    c.restore();
+  }
+
+  /** 正面（f，朝镜头）/ 背面（b，背向镜头）行走与待机 */
+  private drawFB(v: 'f' | 'b', p: PlayerPose, dt: number) {
+    const c = this.ctx, t = p.t, P = this.P;
+    const g = (n: string) => P[v + '_' + n];
+    const legL = g('legL'), legR = g('legR'), torso = g('torso'), head = g('head');
+    const Ln = ((legL.pts.sole.y - legL.j.y) + (legR.pts.sole.y - legR.j.y)) / 2;
+    const fwd = v === 'f' ? 1 : -1;            // 画面中“前进”方向：朝镜头 = 向下
+    const moving = p.moving;
+    const held = p.held, tool = this.tool(held);
+    let footL = { x: -10, y: 0, s: 0 }, footR = { x: 10, y: 0, s: 0 };
+    const tg: Joints = {};
+    if (moving) {
+      const CYC = 2.2, BETA = 0.46;
+      const ph = ((p.walk / 2.1) / CYC) % 1;
+      const leg = (q: number, side: number) => {
+        q = ((q % 1) + 1) % 1;
+        let s: number, lift = 0;
+        if (q < BETA) s = 0.5 - q / BETA;     // 支撑：脚贴地，相对身体后移
+        else { const u = (q - BETA) / (1 - BETA); s = -0.5 + smooth(u); lift = Math.sin(Math.PI * u) ** 0.9 * 20; }
+        return { x: side * 10 - side * lift * 0.12, y: fwd * s * 36 - lift, s };
+      };
+      footL = leg(ph, -1); footR = leg(ph + 0.5, 1);
+      const bounce = Math.cos(TAU * (2 * ph - BETA));
+      const sway = Math.sin(TAU * ph + 0.5);
+      Object.assign(tg, { px: sway * 2.8, py: -Ln * 0.975 + 3 + bounce * 3.5, roll: sway * 0.035, swL: footR.s * 2, swR: footL.s * 2, tilt: Math.sin(TAU * 2 * ph - 0.9) * 0.025, hat: Math.sin(TAU * 2 * ph - 1.3) * 1.5, cloth: 1 });
+    } else {
+      const shift = Math.sin(t * 0.55) * 2.2 + Math.sin(t * 1.37) * 0.6, breath = Math.sin(t * 2.0);
+      Object.assign(tg, { px: shift, py: -Ln * 0.975 + 1.2 - breath * 0.6, roll: shift * 0.006, swL: Math.sin(t * 1.1) * 0.06, swR: Math.sin(t * 1.1 + 0.8) * 0.06, tilt: Math.sin(t * 0.37) * 0.03, hat: breath * 0.5, cloth: 0 });
+    }
+    if (p.shiver > 0.05) tg.px += p.shiver * Math.sin(t * 61) * 1.1;
+    const kk = 1 - Math.exp(-dt * (moving ? 30 : 10));
+    for (const [k, val] of Object.entries(tg)) { const cur = this.fbCur[k]; this.fbCur[k] = cur === undefined ? val : cur + (val - cur) * kk; }
+    const J = this.fbCur;
+    if (!moving) { // 停步：脚滑回站姿
+      for (const [k, x] of [['lx', -10], ['ly', 0], ['rx', 10], ['ry', 0]] as [string, number][]) J[k] = (J[k] ?? x) + (x - (J[k] ?? x)) * kk;
+      footL = { x: J.lx, y: J.ly, s: 0 }; footR = { x: J.rx, y: J.ry, s: 0 };
+    } else { J.lx = footL.x; J.ly = footL.y; J.rx = footR.x; J.ry = footR.y; }
+    const pelvis: V = { x: J.px, y: J.py };
+    const waist = add(pelvis, { x: 0, y: -16 });
+    const roll = J.roll;
+    const tP = (pt: string) => add(waist, rot({ x: torso.pts[pt].x - torso.j.x, y: torso.pts[pt].y - torso.j.y }, roll));
+
+    // 腿：裤腿段伸缩（屈膝/前伸），小腿与草鞋保持原形；近处的腿略大
+    const drawLeg = (part: Part, hip: V, foot: { x: number; y: number; s: number }) => {
+      if (HeroRig.hide.has(v + '_leg')) return;
+      const img = part.img, w = img.naturalWidth, h = img.naturalHeight;
+      const jy = part.j.y, sy = part.pts.sole.y, knee = jy + (sy - jy) * 0.44;
+      const persp = 1 + 0.05 * foot.s * fwd;
+      const dx = foot.x - hip.x, dy = foot.y - hip.y, d = Math.hypot(dx, dy) / persp;
+      const up = Math.max(12, d - (sy - knee));
+      const k = up / (knee - jy);
+      c.save(); c.translate(hip.x, hip.y); c.rotate(angOf(dx, dy)); c.scale(persp, persp);
+      c.drawImage(img, 0, 0, w, knee + 1, -part.j.x, -jy * k, w, (knee + 1) * k);
+      c.drawImage(img, 0, knee, w, h - knee, -part.j.x, up, w, h - knee);
+      c.restore();
+    };
+    // 手臂：向前摆（朝镜头）时透视缩短、略放大
+    const armPose = (part: Part, sh: V, side: number, sw: number, raise = 0) => {
+      const r = side * (0.06 + Math.abs(sw) * 0.05) + raise + roll * 0.5;
+      const sy = 1 - Math.abs(sw) * 0.09 - Math.abs(raise) * 0.25, sc = 1 + sw * fwd * 0.04;
+      const hand = add(sh, rot({ x: (part.pts.hand.x - part.j.x) * sc, y: (part.pts.hand.y - part.j.y) * sy * sc }, r));
+      return { r, sy, sc, hand };
+    };
+    const drawArm = (part: Part, sh: V, a: { r: number; sy: number; sc: number }) => {
+      c.save(); c.translate(sh.x, sh.y + (1 - a.sy) * 6); c.rotate(a.r); c.scale(a.sc, a.sy * a.sc); c.drawImage(part.img, -part.j.x, -part.j.y); c.restore();
+    };
+    const t2 = t;
+    const flutter = (amp: number, freq: number, kx: number) => (u: number) => Math.sin(t2 * freq - u * kx) * amp * u ** 1.4;
+    const cloth = J.cloth;
+
+    // 持物姿势：右手（画面右）
+    let raiseR = 0, toolAng = 0, toolGrip = 0;
+    if (tool) {
+      if (held === 'torch') { raiseR = -0.42; toolAng = -Math.PI / 2 + 0.18; toolGrip = 0.28; }
+      else if (held === 'lantern') { raiseR = -0.28; toolAng = Math.PI / 2; toolGrip = 0; }
+      else if (held === 'spear' || held === 'spear2') { raiseR = -0.2; toolAng = -Math.PI / 2 + 0.06; toolGrip = 0.45; }
+      else { raiseR = -0.08; toolAng = -Math.PI / 2 + 0.3; toolGrip = 0.74; }
+    }
+    const shL = tP('shL'), shR = tP('shR'), neck = tP('neck');
+    const aL = armPose(g('armL'), shL, 1, J.swL), aR = armPose(g('armR'), shR, -1, tool ? J.swR * 0.25 : J.swR, raiseR);
+    const toolHand = aR.hand;
+    if (tool && (held === 'torch' || held === 'lantern')) {
+      const tip = held === 'lantern' ? toolHand : this.toolPoint(tool, held!, toolHand, toolAng, toolGrip, 0.85);
+      this.hand.x = tip.x / PPU * (p.flip ? -1 : 1); this.hand.y = -tip.y / PPU - 0.45;
+    }
+    const pack = p.back ? this.gear[p.back] : undefined;
+    const armor = p.armor ? this.gear[p.armor] : undefined;
+    const tw = torso.img.naturalWidth, nrel = torso.pts.neck.y - torso.j.y;
+
+    // —— 由后到前 ——
+    // 正面：背囊在身后，只从肩上露出
+    if (pack && v === 'f') { const s = 0.62; c.save(); c.translate(waist.x, waist.y); c.rotate(roll); c.drawImage(pack, -pack.naturalWidth * s / 2, nrel - 12, pack.naturalWidth * s, pack.naturalHeight * s); c.restore(); }
+    // 腿（远的先画）
+    const hipL = add(pelvis, rot({ x: -9, y: 0 }, roll)), hipR = add(pelvis, rot({ x: 9, y: 0 }, roll));
+    const legs: [Part, V, typeof footL][] = [[legL, hipL, footL], [legR, hipR, footR]];
+    legs.sort((a, b) => a[2].y - b[2].y);
+    for (const [pt, hp, ft] of legs) drawLeg(pt, hp, ft);
+    // 下摆：随身体左右摆、行走时轻微飘动
+    const sk = g('skirt'), skf = flutter(cloth ? 2.0 : 0.7, cloth ? 10 : 2.4, 4);
+    this.warped(v + '_skirt', add(waist, rot({ x: 0, y: -6 }, roll)), roll * 0.6, (u) => u * (footL.y - footR.y) * 0.05 * fwd - u * J.px * 0.4 + skf(u));
+    void sk;
+    // 躯干
+    c.save(); c.translate(waist.x, waist.y); c.rotate(roll); c.scale(1, 1 + Math.sin(t * 2.0) * (moving ? 0 : 0.006));
+    c.drawImage(torso.img, -torso.j.x, -torso.j.y);
+    if (pack && v === 'f') {   // 正面背带
+      c.lineCap = 'round';
+      for (const sd of [-1, 1]) {
+        c.strokeStyle = '#4a321c'; c.lineWidth = 5;
+        c.beginPath(); c.moveTo(sd * tw * 0.27, nrel + 8); c.quadraticCurveTo(sd * tw * 0.3, nrel + 32, sd * tw * 0.22, nrel + 56); c.stroke();
+        c.strokeStyle = 'rgba(150,110,60,0.55)'; c.lineWidth = 1.5; c.stroke();
+      }
+    }
+    c.restore();
+    // 背面：围巾尾、背囊压在背上
+    const headR = roll * 0.5 + J.tilt;
+    if (v === 'b') {
+      const sf = flutter(cloth ? 4 : 1.4, cloth ? 9 : 2.2, 5);
+      const knot = add(neck, { x: 4, y: 10 });
+      if (!pack) this.warped('b_scarf', knot, headR * 0.5 + 0.04, (u) => sf(u) + u * J.px * -0.6);
+    }
+    // 手臂（垂在身侧）与持物
+    drawArm(g('armL'), shL, aL);
+    const toolFirst = tool && v === 'b';
+    if (toolFirst) this.drawTool(tool!, held!, toolHand, toolAng, toolGrip);
+    drawArm(g('armR'), shR, aR);
+    // 护甲是无袖背心：压在袖口根部之上；背面的背囊再压在护甲上
+    c.save(); c.translate(waist.x, waist.y); c.rotate(roll);
+    if (armor) { const w = tw * 0.9, h = -nrel + 26; c.drawImage(armor, -torso.j.x + tw / 2 - w / 2, nrel - 2, w, h); }
+    if (pack && v === 'b') { const s = 0.62; c.drawImage(pack, -pack.naturalWidth * s / 2, nrel + 6, pack.naturalWidth * s, pack.naturalHeight * s); }
+    c.restore();
+    // 头、斗笠
+    const headAt = add(neck, { x: 0, y: v === 'f' ? 4 : 6 });
+    this.part(v + '_head', headAt, headR);
+    if (v === 'b' && pack) { // 有背囊时围巾尾只露出一截
+      const sf = flutter(cloth ? 3 : 1, cloth ? 9 : 2.2, 5);
+      c.save(); c.beginPath(); c.rect(-200, -400, 400, headAt.y + 40 + 400); c.clip();
+      this.warped('b_scarf', add(neck, { x: 4, y: 10 }), headR * 0.5 + 0.04, sf); c.restore();
+    }
+    const hj = { x: head.pts.hatJoint.x - head.j.x, y: head.pts.hatJoint.y - head.j.y + J.hat * 0.6 };
+    const hatAt = add(headAt, rot(hj, headR));
+    this.garland(p.head, hatAt, headR + J.hat * 0.01, 'back');
+    this.part('hat', hatAt, headR + J.hat * 0.01);
+    this.garland(p.head, hatAt, headR + J.hat * 0.01, 'front');
+    if (tool && !toolFirst) this.drawTool(tool, held!, toolHand, toolAng, toolGrip);
   }
 }

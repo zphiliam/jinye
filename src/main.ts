@@ -32,6 +32,7 @@ async function boot() {
   await new Promise((r) => setTimeout(r, 20));
   atlas.finalize();
   const { Game } = await import('./game/game');
+  const { hasSave, describeSave } = await import('./game/save');
   const canvas = document.createElement('canvas');
   canvas.id = 'gl';
   document.body.prepend(canvas);
@@ -48,14 +49,19 @@ async function boot() {
     requestAnimationFrame(loop);
   };
 
-  const begin = () => {
+  const save = hasSave();
+  const begin = (cont = false) => {
     menu?.classList.add('fade');
     setTimeout(() => menu?.remove(), 1200);
-    game.start();
+    if (cont && save) game.continueGame(save); else game.start();
   };
+  // 关闭/刷新页面时顺手存档（死亡后不会存）
+  window.addEventListener('pagehide', () => { if (game.mode === 'play') game.saveGame(); });
 
   let menu: HTMLElement | null = null;
-  if (params.get('autostart') === '1') {
+  if (params.get('continue') === '1' && save) {
+    game.continueGame(save);
+  } else if (params.get('autostart') === '1') {
     game.mode = 'play';
     game.start();
   } else {
@@ -66,10 +72,11 @@ async function boot() {
       <h1 class="title">烬野<span class="seal">荒原<br>求生</span></h1>
       <div class="sub">EMBER WILDS</div>
       <div class="tag">一片被墨色吞没的荒原。白昼短暂，黄昏如血。<br>采集、制作、生火——别让火熄灭，别在黑暗里久留。</div>
-      <button class="btn primary" data-a="start">开始游戏 <span class="k">Enter</span></button>
+      ${save ? `<button class="btn primary" data-a="continue">继续旅程 <span class="k">Enter</span><small class="save-info">${describeSave(save)}${save.easy ? ' · 宽容' : ''}</small></button>` : ''}
+      <button class="btn ${save ? 'ghost' : 'primary'}" data-a="start">${save ? '新的旅程' : '开始游戏 <span class="k">Enter</span>'}</button>
       <button class="btn ghost" data-a="easy">${easy ? '标准模式' : '宽容模式'}</button>
       <button class="btn ghost" data-a="help">操作说明</button>
-      <div class="foot">全部美术与音效均由代码实时生成 · 种子 ${seed}${easy ? ' · 宽容模式' : ''}</div>`;
+      <div class="foot">${pack ? '手绘美术资源 · 音效由代码实时合成' : '程序化美术（?art=proc）· 音效由代码实时合成'} · 种子 ${seed}${easy ? ' · 宽容模式' : ''}</div>`;
     document.body.appendChild(menu);
     const showHelp = () => {
       const o = document.createElement('div');
@@ -81,7 +88,8 @@ async function boot() {
     };
     menu.addEventListener('click', (e) => {
       const a = (e.target as HTMLElement).closest('[data-a]')?.getAttribute('data-a');
-      if (a === 'start') begin();
+      if (a === 'continue') begin(true);
+      else if (a === 'start') begin();
       else if (a === 'help') showHelp();
       else if (a === 'easy') {
         const u = new URL(location.href);
@@ -90,7 +98,7 @@ async function boot() {
         location.href = u.toString();
       }
     });
-    const onKey = (e: KeyboardEvent) => { if (e.code === 'Enter' && game.mode === 'menu' && !document.getElementById('help')) { window.removeEventListener('keydown', onKey); begin(); } };
+    const onKey = (e: KeyboardEvent) => { if (e.code === 'Enter' && game.mode === 'menu' && !document.getElementById('help')) { window.removeEventListener('keydown', onKey); begin(!!save); } };
     window.addEventListener('keydown', onKey);
   }
   requestAnimationFrame((t) => { last = t; loop(t); });

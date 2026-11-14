@@ -138,7 +138,7 @@ export class Post {
     this.sceneRT = new THREE.WebGLRenderTarget(w, h, opts);
     this.rtA = new THREE.WebGLRenderTarget(Math.ceil(w / 4), Math.ceil(h / 4), { type: THREE.HalfFloatType, depthBuffer: false });
     this.rtB = this.rtA.clone();
-    this.bright = new THREE.ShaderMaterial({ uniforms: { tSrc: { value: null }, uThreshold: { value: 0.9 } }, vertexShader: quadVert, fragmentShader: brightFrag, depthTest: false });
+    this.bright = new THREE.ShaderMaterial({ uniforms: { tSrc: { value: null }, uThreshold: { value: 1.15 } }, vertexShader: quadVert, fragmentShader: brightFrag, depthTest: false });
     this.blur = new THREE.ShaderMaterial({ uniforms: { tSrc: { value: null }, uDir: { value: new THREE.Vector2() } }, vertexShader: quadVert, fragmentShader: blurFrag, depthTest: false });
     const paper = new THREE.CanvasTexture(grainTile());
     paper.wrapS = paper.wrapT = THREE.RepeatWrapping;
@@ -147,7 +147,7 @@ export class Post {
       uniforms: {
         tScene: { value: null }, tBloom: { value: null }, tPaper: { value: paper },
         uRes: { value: new THREE.Vector2(w, h) }, uTime: { value: 0 },
-        uBloom: { value: 0.8 }, uExposure: { value: 1.35 }, uSat: { value: 0.9 }, uContrast: { value: 1.08 },
+        uBloom: { value: 0.6 }, uExposure: { value: 1.35 }, uSat: { value: 0.9 }, uContrast: { value: 1.08 },
         uLift: { value: new THREE.Vector3(0.02, 0.015, 0.01) }, uGain: { value: new THREE.Vector3(1, 0.97, 0.9) },
         uVignette: { value: 0.55 }, uInsane: { value: 0 }, uHurt: { value: 0 }, uDark: { value: 0 },
         uShafts: { value: 0 }, uShaftColor: { value: new THREE.Vector3(1, 0.6, 0.3) }, uFlicker: { value: 0 }, uFade: { value: 0 },
