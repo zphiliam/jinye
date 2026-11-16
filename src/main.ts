@@ -25,12 +25,33 @@ async function boot() {
   const { buildAtlas } = await import('./art/atlas');
   const { loadArtPack } = await import('./art/pack');
   // 手绘资源包（public/art/）；?art=proc 可强制使用旧的全程序化素材
-  const pack = params.get('art') === 'proc' ? null : await loadArtPack('art/', (p, label) => { bar.style.width = `${Math.round(p * 40)}%`; lb.textContent = `取画：${label}`; });
+  const boot: Record<string, number> = { start: performance.now() };
+  (window as unknown as { __boot: unknown }).__boot = boot;
+  const codeArt = params.get('art') === 'code';
+  // ?art=code：已转为代码生成的资产不再下载 PNG
+  const names = codeArt ? await import('./art/gen/names') : null;
+  const skip = names ? names.packImageNames(names.DEFAULT_GROUPS) : undefined;
+  const pack = params.get('art') === 'proc' ? null : await loadArtPack('art/', (p, label) => { bar.style.width = `${Math.round(p * 40)}%`; lb.textContent = `取画：${label}`; }, skip);
+  // ?art=code：样张模式——行者、松树、火堆改用代码实时生成（其余仍为手绘 PNG）
+  boot.pack = performance.now();
+  if (pack && codeArt) {
+    lb.textContent = '以代码绘制：行者 · 草木山石 · 鸟兽 · 器物';
+    const { loadCodeArt } = await import('./art/gen/runtime');
+    // ?nocache=1：跳过缓存现场生成（测冷启动）；?cgworker=0：强制主线程生成
+    const rep = await loadCodeArt(pack, {
+      useCache: params.get('nocache') !== '1', worker: params.get('cgworker') !== '0',
+      onStored: (ms, bytes) => console.info(`[烬野] 代码美术已写入缓存：${(bytes / 1024).toFixed(0)} KB，用时 ${ms.toFixed(0)} ms`),
+    });
+    console.info(`[烬野] 代码美术：${rep.count} 项，来源 ${rep.source}，用时 ${rep.ms.toFixed(0)} ms`, rep.phases ?? '', rep.hash);
+    (window as unknown as { __codeArt: unknown }).__codeArt = rep;
+  }
+  boot.codeArt = performance.now();
   const atlas = await buildAtlas((p, label) => { bar.style.width = `${Math.round(40 + p * 45)}%`; lb.textContent = `刻版：${label}`; }, pack);
   if (pack) setIconProvider((id) => atlas.iconURL(id));
   lb.textContent = '开垦烬野……'; bar.style.width = '90%';
   await new Promise((r) => setTimeout(r, 20));
   atlas.finalize();
+  boot.atlas = performance.now();
   const { Game } = await import('./game/game');
   const { hasSave, describeSave } = await import('./game/save');
   const canvas = document.createElement('canvas');
@@ -76,7 +97,7 @@ async function boot() {
       <button class="btn ${save ? 'ghost' : 'primary'}" data-a="start">${save ? '新的旅程' : '开始游戏 <span class="k">Enter</span>'}</button>
       <button class="btn ghost" data-a="easy">${easy ? '标准模式' : '宽容模式'}</button>
       <button class="btn ghost" data-a="help">操作说明</button>
-      <div class="foot">${pack ? '手绘美术资源 · 音效由代码实时合成' : '程序化美术（?art=proc）· 音效由代码实时合成'} · 种子 ${seed}${easy ? ' · 宽容模式' : ''}</div>`;
+      <div class="foot">${pack ? (params.get('art') === 'code' ? '代码生成美术（仅行者整身回退图仍为手绘）· 音效由代码实时合成' : '手绘美术资源 · 音效由代码实时合成') : '程序化美术（?art=proc）· 音效由代码实时合成'} · 种子 ${seed}${easy ? ' · 宽容模式' : ''}</div>`;
     document.body.appendChild(menu);
     const showHelp = () => {
       const o = document.createElement('div');
@@ -101,7 +122,8 @@ async function boot() {
     const onKey = (e: KeyboardEvent) => { if (e.code === 'Enter' && game.mode === 'menu' && !document.getElementById('help')) { window.removeEventListener('keydown', onKey); begin(!!save); } };
     window.addEventListener('keydown', onKey);
   }
-  requestAnimationFrame((t) => { last = t; loop(t); });
+  requestAnimationFrame((t) => { last = t; loop(t); requestAnimationFrame(() => { boot.firstFrame = performance.now(); console.info('[烬野] 启动计时(ms，自导航起)', JSON.stringify(Object.fromEntries(Object.entries(boot).map(([k, v]) => [k, Math.round(v)])))); }); });
+  boot.game = performance.now();
   loading.style.opacity = '0';
   setTimeout(() => loading.remove(), 1000);
 }

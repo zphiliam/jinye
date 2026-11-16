@@ -759,9 +759,9 @@ export class Game implements HudHost {
       case 'attack':
         if (this.attackCd > 0) return;
         this.startAnim('attack', 0.42, 0.45, t, 'attack'); this.audio.swing(); this.attackCd = 0.5; break;
-      case 'pick': this.startAnim('pickup', 0.38, 0.6, t, 'pick'); this.audio.pick(); break;
-      case 'pickup': this.startAnim('pickup', 0.26, 0.5, t, 'pickup'); break;
-      case 'fuel': this.startAnim('pickup', 0.32, 0.5, t, 'fuel'); break;
+      case 'pick': this.startAnim('pickup', 0.5, 0.58, t, 'pick'); this.audio.pick(); break;
+      case 'pickup': this.startAnim('pickup', 0.36, 0.55, t, 'pickup'); break;
+      case 'fuel': this.startAnim('pickup', 0.4, 0.55, t, 'fuel'); break;
       default: this.target = null;
     }
   }

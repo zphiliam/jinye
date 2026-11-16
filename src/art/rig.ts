@@ -42,9 +42,10 @@ function sample(keys: Key[], t: number): number[] {
 // 方向：-π/2 = 朝上，π = 朝前(左)，-π/4 = 朝后上，3π/4 = 朝前下
 const CHOP: Key[] = [
   { t: 0.0, v: [-16, -166, -2.0, 0.04, 2, -20, 18, 34] },
-  { t: 0.42, v: [18, -246, -0.32, -0.16, -2, -22, 20, 30], ease: easeOut },                    // 蓄力：高举过头、后仰
-  { t: 0.55, v: [-40, -150, 2.5, 0.26, 10, -26, 22, 30], ease: easeIn },                     // 劈下：快速、前倾下沉
-  { t: 0.72, v: [-34, -128, 2.2, 0.3, 12, -26, 22, 30], ease: easeOut },                     // 随势：继续下压
+  { t: 0.42, v: [20, -244, -0.3, -0.14, -2, -22, 20, 30], ease: easeOut },                     // 蓄力：举到肩后、仅此时略后仰
+  { t: 0.5, v: [-6, -232, -2.1, 0.06, 4, -24, 21, 30], ease: easeIn },                      // 挥过头顶：躯干开始前压
+  { t: 0.55, v: [-42, -150, -3.78, 0.3, 11, -26, 22, 30], ease: easeIn },                    // 劈中（= 树木受击帧）：前倾下沉，重心压到前脚
+  { t: 0.72, v: [-36, -126, -4.06, 0.36, 13, -26, 22, 30], ease: easeOut },                  // 随势：继续下压
   { t: 1.0, v: [-16, -166, -2.0, 0.04, 2, -20, 18, 34], ease: smooth },                      // 收势
 ];
 const THRUST: Key[] = [
@@ -57,8 +58,8 @@ const THRUST: Key[] = [
 const SWING: Key[] = [   // 非长矛的攻击：斜劈
   { t: 0.0, v: [-16, -166, -2.0, 0.04, 2, -20, 18, 34] },
   { t: 0.3, v: [18, -238, -0.7, -0.12, 0, -22, 20, 30], ease: easeOut },
-  { t: 0.45, v: [-44, -150, 2.7, 0.24, 9, -28, 22, 30], ease: easeIn },
-  { t: 0.66, v: [-32, -130, 2.25, 0.26, 10, -28, 22, 30], ease: easeOut },
+  { t: 0.45, v: [-44, -150, -3.58, 0.28, 9, -28, 22, 30], ease: easeIn },
+  { t: 0.66, v: [-32, -130, -4.03, 0.3, 10, -28, 22, 30], ease: easeOut },
   { t: 1.0, v: [-16, -166, -2.0, 0.04, 2, -20, 18, 34], ease: smooth },
 ];
 const PUNCH: Key[] = [ // 空手：[近手x, 近手y, 前倾, 下沉, 前脚, 后脚]
@@ -67,6 +68,16 @@ const PUNCH: Key[] = [ // 空手：[近手x, 近手y, 前倾, 下沉, 前脚, �
   { t: 0.46, v: [-62, -180, 0.22, 8, -32, 22], ease: easeIn },
   { t: 0.66, v: [-56, -178, 0.2, 8, -32, 22], ease: easeOut },
   { t: 1, v: [-18, -170, 0.04, 3, -18, 18], ease: smooth },
+];
+
+// 采集（蹲身采摘）：[骨盆后移, 骨盆下沉, 躯干前倾, 近臂角, 近肘, 远臂角, 远肘, 头部点头(负 = 低头)]
+// 屈膝下蹲 + 髋部前屈，近手伸向地面 / 灌木，0.58 处短促一拽（采下），再起身
+const GATHER: Key[] = [
+  { t: 0.0, v: [0, 0, 0.03, 0.04, 0.14, -0.03, 0.12, 0] },
+  { t: 0.3, v: [8, 38, 0.8, 1.2, 0.14, 0.42, 1.0, -0.14], ease: easeOut },     // 下蹲前屈、伸手
+  { t: 0.47, v: [9, 44, 0.88, 1.36, 0.08, 0.48, 1.1, -0.18] },                  // 抓住（手到地面 / 灌木根部）
+  { t: 0.58, v: [7, 37, 0.76, 1.0, 0.85, 0.44, 1.05, -0.1], ease: easeIn },     // 一拽
+  { t: 1.0, v: [0, 0, 0.03, 0.04, 0.14, -0.03, 0.12, 0], ease: smooth },        // 起身
 ];
 
 const FB_PARTS = ['head', 'torso', 'skirt', 'armL', 'armR', 'legL', 'legR'].flatMap((k) => ['f_' + k, 'b_' + k]).concat('b_scarf');
@@ -197,7 +208,7 @@ export class HeroRig {
     c.clearRect(0, 0, cv.width, cv.height);
     c.translate(cv.width / 2, cv.height - this.pad);
     // 朝镜头 / 背向镜头：使用正面、背面部件（动作仍用侧面姿势）
-    if (this.fbOK && (p.facing === 'down' || p.facing === 'up') && !p.dead && p.action === 'none') {
+    if (this.fbOK && (p.facing === 'down' || p.facing === 'up') && !p.dead && (p.action === 'none' || p.action === 'pickup')) {
       this.drawFB(p.facing === 'down' ? 'f' : 'b', p, dt);
       return;
     }
@@ -277,26 +288,28 @@ export class HeroRig {
       const spear = held === 'spear' || held === 'spear2';
       if (a === 'attack' && !tool) {
         const v = sample(PUNCH, at);
-        handN = { x: v[0], y: v[1] }; lean = v[2]; pelvis = { x: 0, y: -this.hipH + v[3] };
+        handN = { x: v[0], y: v[1] }; lean = v[2]; pelvis = { x: -lean * 12, y: -this.hipH + v[3] };
         footN = { x: v[4], y: -L.ank }; footF = { x: v[5], y: -L.ank };
         armF = -0.35; elbF = 1.2;
       } else {
         const keys = a === 'attack' ? (spear ? THRUST : SWING) : CHOP;
         const v = sample(keys, at);
-        handN = { x: v[0], y: v[1] }; toolAng = v[2]; lean = v[3]; pelvis = { x: lean * 10, y: -this.hipH + v[4] };
+        handN = { x: v[0], y: v[1] }; toolAng = v[2]; lean = v[3]; pelvis = { x: -lean * 14, y: -this.hipH + v[4] };   // 前倾时重心移到前脚（-x 为前）
         footN = { x: v[5], y: -L.ank }; footF = { x: v[6], y: -L.ank };
         toolGrip = spear ? 0.5 : 0.3; farOnTool = spear ? 0.18 : 0.08;
         // 打击瞬间的拖影强度（角速度）
         const v2 = sample(keys, Math.min(1, at + 0.02));
         smear = Math.abs(v2[2] - v[2]) * 2.2;
       }
-      headTilt = lean * 0.35; hatLag = -lean * 3;
+      headTilt = -lean * 0.15; hatLag = lean * 3;   // 头随躯干、略点向目标
       scarfTrail = 4 + Math.abs(lean) * 20;
       twist = lean * 0.08;
     } else if (a === 'pickup' || a === 'eat' || a === 'craft') {
       const k = Math.sin(Math.PI * at);
       if (a === 'pickup') {
-        pelvis.y += 22 * k; lean = 0.38 * k; armN = 0.55 * k; elbN = 0.15 + 0.4 * k; footN = { x: -16, y: -L.ank }; footF = { x: 12, y: -L.ank };
+        const v = sample(GATHER, at);
+        pelvis = { x: pelvis.x + v[0], y: -this.hipH + v[1] }; lean = v[2]; armN = v[3]; elbN = v[4]; armF = v[5]; elbF = v[6]; headTilt = v[7];
+        footN = { x: -17, y: -L.ank }; footF = { x: 14, y: -L.ank }; scarfTrail = 3 + v[2] * 6; hatLag = v[2] * 2;
       } else if (a === 'eat') {
         armN = 0.9 * k; elbN = 0.2 + 2.0 * k; headTilt = -0.06 * k; lean = 0.04;
       } else {
@@ -343,7 +356,9 @@ export class HeroRig {
     const lgN = legSolve(hipN, footN, 'thighN', 'shinN');
     const lgF = legSolve(hipF, footF, 'thighF', 'shinF');
     const waist = add(pelvis, { x: 1, y: -16 });
-    const torsoR = J.lean;
+    // lean 正值 = 向前（-x）弯腰。躯干从腰部向上伸，画布旋转角正值会把它转向 +x（身后），所以取反。
+    // （此前直接用 lean，导致采集 / 劈砍时身体向后仰、蓄力时反而前倾。）
+    const torsoR = -J.lean;
     const tP = (pt: string) => add(waist, rot(this.vec('torso', pt), torsoR));
     const shN = tP('shN'), shF = tP('shF'), neck = tP('neck');
 
@@ -400,7 +415,7 @@ export class HeroRig {
     // 下摆：随双膝前后摆动、行走时向后拖
     const kneeMid = (lgN.knee.x + lgF.knee.x) / 2 - pelvis.x;
     const skF = flutter(moving ? 2.2 : 0.8, moving ? 11 : 2.6, 4);
-    this.warped('skirt', add(waist, rot({ x: 1, y: -5 }, torsoR)), torsoR * 0.45, (u) => u * (kneeMid * 0.45 + (moving ? 3 : 0)) + skF(u) + skirtSway);
+    this.warped('skirt', add(waist, rot({ x: 1, y: -5 }, torsoR)), -torsoR * 0.3, (u) => u * (kneeMid * 0.45 + (moving ? 3 : 0)) + skF(u) + skirtSway);
     // 背囊（身后）
     const neckRel = this.vec('torso', 'neck');
     const pack = p.back ? this.gear[p.back] : undefined;
@@ -488,10 +503,15 @@ export class HeroRig {
       for (const [k, x] of [['lx', -10], ['ly', 0], ['rx', 10], ['ry', 0]] as [string, number][]) J[k] = (J[k] ?? x) + (x - (J[k] ?? x)) * kk;
       footL = { x: J.lx, y: J.ly, s: 0 }; footR = { x: J.rx, y: J.ry, s: 0 };
     } else { J.lx = footL.x; J.ly = footL.y; J.rx = footR.x; J.ry = footR.y; }
-    const pelvis: V = { x: J.px, y: J.py };
+    // 采集（正 / 背面）：屈膝下蹲、双脚分开，躯干前屈 → 纵向透视压缩，双手前伸向下，一拽后起身
+    const gv = p.action === 'pickup' && !moving ? sample(GATHER, p.actionT) : null;
+    const gk = gv ? gv[2] / 0.88 : 0;
+    if (gv) { footL = { x: footL.x - 9 * gk, y: footL.y, s: 0 }; footR = { x: footR.x + 9 * gk, y: footR.y, s: 0 }; }
+    const pelvis: V = { x: J.px * (1 - gk), y: J.py + (gv ? gv[1] * 0.85 : 0) };
     const waist = add(pelvis, { x: 0, y: -16 });
     const roll = J.roll;
-    const tP = (pt: string) => add(waist, rot({ x: torso.pts[pt].x - torso.j.x, y: torso.pts[pt].y - torso.j.y }, roll));
+    const squash = 1 - 0.24 * gk;
+    const tP = (pt: string) => add(waist, rot({ x: torso.pts[pt].x - torso.j.x, y: (torso.pts[pt].y - torso.j.y) * squash }, roll));
 
     // 腿：裤腿段伸缩（屈膝/前伸），小腿与草鞋保持原形；近处的腿略大
     const drawLeg = (part: Part, hip: V, foot: { x: number; y: number; s: number }) => {
@@ -531,6 +551,14 @@ export class HeroRig {
     }
     const shL = tP('shL'), shR = tP('shR'), neck = tP('neck');
     const aL = armPose(g('armL'), shL, 1, J.swL), aR = armPose(g('armR'), shR, -1, tool ? J.swR * 0.25 : J.swR, raiseR);
+    if (gv) {   // 双手向身前下方伸（朝镜头 / 背向时手臂透视缩短），右手（近手）伸得更远，一拽时收回
+      const reach = (a: typeof aL, part: Part, sh: V, side: number, amt: number) => {
+        a.r = lerp(a.r, -side * 0.42 * amt, gk); a.sy = lerp(a.sy, 1 - 0.34 * amt, gk); a.sc = lerp(a.sc, 1 + 0.07 * amt * fwd, gk);
+        a.hand = add(sh, rot({ x: (part.pts.hand.x - part.j.x) * a.sc, y: (part.pts.hand.y - part.j.y) * a.sy * a.sc }, a.r));
+      };
+      reach(aL, g('armL'), shL, 1, gv[5] / 0.48 * 0.75);
+      reach(aR, g('armR'), shR, -1, gv[3] / 1.36);
+    }
     const toolHand = aR.hand;
     if (tool && (held === 'torch' || held === 'lantern')) {
       const tip = held === 'lantern' ? toolHand : this.toolPoint(tool, held!, toolHand, toolAng, toolGrip, 0.85);
@@ -553,7 +581,7 @@ export class HeroRig {
     this.warped(v + '_skirt', add(waist, rot({ x: 0, y: -6 }, roll)), roll * 0.6, (u) => u * (footL.y - footR.y) * 0.05 * fwd - u * J.px * 0.4 + skf(u));
     void sk;
     // 躯干
-    c.save(); c.translate(waist.x, waist.y); c.rotate(roll); c.scale(1, 1 + Math.sin(t * 2.0) * (moving ? 0 : 0.006));
+    c.save(); c.translate(waist.x, waist.y); c.rotate(roll); c.scale(1, squash * (1 + Math.sin(t * 2.0) * (moving ? 0 : 0.006)));
     c.drawImage(torso.img, -torso.j.x, -torso.j.y);
     if (pack && v === 'f') {   // 正面背带
       c.lineCap = 'round';
@@ -565,7 +593,7 @@ export class HeroRig {
     }
     c.restore();
     // 背面：围巾尾、背囊压在背上
-    const headR = roll * 0.5 + J.tilt;
+    const headR = roll * 0.5 + J.tilt * (1 - gk);
     if (v === 'b') {
       const sf = flutter(cloth ? 4 : 1.4, cloth ? 9 : 2.2, 5);
       const knot = add(neck, { x: 4, y: 10 });
@@ -577,12 +605,12 @@ export class HeroRig {
     if (toolFirst) this.drawTool(tool!, held!, toolHand, toolAng, toolGrip);
     drawArm(g('armR'), shR, aR);
     // 护甲是无袖背心：压在袖口根部之上；背面的背囊再压在护甲上
-    c.save(); c.translate(waist.x, waist.y); c.rotate(roll);
+    c.save(); c.translate(waist.x, waist.y); c.rotate(roll); c.scale(1, squash);
     if (armor) { const w = tw * 0.9, h = -nrel + 26; c.drawImage(armor, -torso.j.x + tw / 2 - w / 2, nrel - 2, w, h); }
     if (pack && v === 'b') { const s = 0.62; c.drawImage(pack, -pack.naturalWidth * s / 2, nrel + 6, pack.naturalWidth * s, pack.naturalHeight * s); }
     c.restore();
     // 头、斗笠
-    const headAt = add(neck, { x: 0, y: v === 'f' ? 4 : 6 });
+    const headAt = add(neck, { x: 0, y: (v === 'f' ? 4 : 6) + gk * (v === 'f' ? 10 : 6) + (gv ? -gv[7] * 10 : 0) });
     this.part(v + '_head', headAt, headR);
     if (v === 'b' && pack) { // 有背囊时围巾尾只露出一截
       const sf = flutter(cloth ? 3 : 1, cloth ? 9 : 2.2, 5);
