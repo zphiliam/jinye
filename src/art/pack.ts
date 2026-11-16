@@ -12,12 +12,13 @@ export interface ArtPack {
   images: Map<string, HTMLImageElement>;
 }
 
-export async function loadArtPack(base = 'art/', onProgress?: (p: number, label: string) => void): Promise<ArtPack | null> {
+/** skip：不下载的图片名（已由代码生成替换的资产） */
+export async function loadArtPack(base = 'art/', onProgress?: (p: number, label: string) => void, skip?: Set<string>): Promise<ArtPack | null> {
   try {
     const res = await fetch(base + 'manifest.json', { cache: 'no-cache' });
     if (!res.ok) throw new Error('manifest ' + res.status);
     const m = await res.json() as Omit<ArtPack, 'images'>;
-    const names = Object.keys(m.sprites);
+    const names = Object.keys(m.sprites).filter((n) => !skip?.has(n));
     const images = new Map<string, HTMLImageElement>();
     let done = 0;
     await Promise.all(names.map(async (n) => {
